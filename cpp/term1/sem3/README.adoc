@@ -1,0 +1,371 @@
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/llhQl1Lt)
+= Семинар III
+:icons: font
+:table-caption!:
+:source-highlighter: highlightjs
+:revealjs_hash: true
+:customcss: https://gistcdn.githack.com/fedochet/4ee0f4a2224ecd29a961082a0c63c020/raw/18c107982aba90bb94194c0ac3a8a5ca9bad6782/asciidoc_revealjs_custom_style.css
+:highlightjs-theme: https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@8.2/build/styles/tomorrow.min.css
+:revealjs_theme: white
+:stylesheet: main.css
+:toc:
+:toclevels: 4
+
+== Сегодня на занятии
+* ссылки
+* аргументы функции
+* динамическая память
+* структуры
+* inline trick
+
+== Ссылки
+
+[source,cpp]
+----
+int i = 3;
+int &r = i;
+----
+
+[%step]
+* `sizeof(r)`?
+* -> возвратит размер типа за ссылкой == `sizeof(int)`
+* в то же время "передача по ссылке" — "легковесная"
+
+ifdef::backend-revealjs[=== !]
+
+В чем отличие ссылки от указателя?
+
+[%step]
+* нет nullptr (и аналогов)
+* ссылку нельзя переназначить
+
+ifdef::backend-revealjs[=== !]
+
+[source,cpp]
+----
+int i = 3;
+int &r = i;
+int *p = &i;
+----
+
+[%step]
+* `i` и `r` обозначают один и тот же участок памяти
+* `p` — не факт, что в течение всего выполнения указывает на `i`
+* ссылка _может быть_ реализована через указатель (в конкретном случае)
+
+=== dangling reference
+
+[source,cpp]
+----
+int& foo() {
+    int n = 10;
+    return n;
+}
+
+int& i = foo();
+----
+
+== Передача аргументов в функцию
+* На лекции: по значению, по ссылке, по указателю
+* Зачем передавать не по значению?
+
+ifdef::backend-revealjs[=== !]
+
+* изменить аргумент
+
+[source,cpp]
+----
+void changeArg(int& a) { a += 24; };
+
+int i = 42;
+
+changeArg(i);
+assert(i == 66);
+----
+
+ifdef::backend-revealjs[=== !]
+* избежать копирования == передать меньше данных
+
+[source,cpp]
+----
+// хранит длину + данные строки + ...
+using string_t = std::string;
+
+// передаем по адресу => 8 байт
+void argPassedByRef(const string_t& longString);
+----
+
+=== Примеры
+Как передаются аргументы?
+
+[source,cpp]
+----
+void foo(int);
+
+int i = 42;
+
+foo(i);  // (1)
+foo(24); // (2)
+----
+
+[.fragment]
+(1): по значению
+
+[.fragment]
+(2): по значению
+
+ifdef::backend-revealjs[=== !]
+
+[source,cpp]
+----
+void foo(int&);
+
+int i = 42;
+
+foo(i);  // (1)
+foo(24); // (2)
+----
+
+[.fragment]
+(1): по значению
+
+[.fragment]
+(2): не скомпилируется — _почему?_
+
+ifdef::backend-revealjs[=== !]
+
+[source,cpp]
+----
+void foo(int*);
+
+int i = 42;
+int *p = &i;
+
+foo(&i);        // (1)
+foo(p);         // (2)
+foo(new int{}); // (3)
+----
+
+[.fragment]
+(1): копируется временное значение — адрес i
+
+[.fragment]
+(2): копируется значение — адрес _из_ p
+
+[.fragment]
+(3): копируется значение — адрес, указывающий на кучу
+
+ifdef::backend-revealjs[=== !]
+Как поменять указатель внутри функции?
+
+[source,cpp]
+----
+void foo(???) { /* меняет аргумент */ };
+
+int *p; // какой-то адрес
+int *old_p = p;
+
+foo(p);
+
+assert(p != old_p);
+----
+
+https://godbolt.org/z/vqa7znd3K[godbolt-заготовка]
+
+== Динамическая память
+
+* new/new[] и парный delete/delete[]
+* избегайте ошибок :)
+** аллокация без подчистки
+** непарное выделение/освобождение
+** "проезды по памяти"
+** ...
+
+=== Саинтайзер для нахождения проблем
+* Крутой инструмент
+* в CI: сборка с `-fsanitize=address` (есть и другие типы проверок, https://clang.llvm.org/docs/index.html[llvm-doc])
+* примеры классов ошибок: https://en.wikipedia.org/wiki/AddressSanitizer#Examples[wiki]
+* доклад, о внутренностях: https://cppconf-moscow.ru/en/2020/msk/talks/5z8dm9cpuxlqkqgrr18eyb/[AddressSanitizer anatomy]
+
+== Структуры
+
+Минимальный вариант — это композиция типов
+
+[source,cpp]
+----
+struct Simple { int b; };
+
+struct Foo {
+    int a;
+    char *c;
+    Simple s;
+};
+
+Foo f;
+
+f.a = 42;
+f.c = new char[3]{};
+f.s.b = 24;
+----
+
+=== Указатели на cтруктуры
+
+[source,cpp]
+----
+struct Simple {
+    int b;
+};
+
+Simple *s;
+
+(*s).b = 42;
+s->b = 42;
+----
+
+=== Структуры со связями друг на друга
+
+[source,cpp]
+----
+struct Node {
+    int value;
+    size_t timestamp;
+    Node* next;
+};
+----
+
+[.fragment]
+* типичная семантика:
+** список задается головным элементом `Node* head`
+[.fragment]
+** перейти к следующему элементу — через `node->next`
+[.fragment]
+** последний элемент: с `node->next == null`
+
+=== Размеры структур
+
+[source,cpp]
+----
+struct Foo { int i; };
+
+struct Bar {
+    int value;
+    Foo foo;
+    size_t timestamp;
+};
+
+struct Baz {
+    int value;
+    Foo* foo;
+    size_t timestamp;
+};
+
+struct Node {
+    int value;
+    size_t timestamp;
+    Node* next;
+};
+----
+
+* `sizeof` каждой из структур?
+
+== Задачи
+
+* 4 шт по 0.75 балла
+* также заполняем таргеты в Makefile
+
+== #1 concat
+
+Напишите функцию `concat`, которая принимает
+два участка памяти и аллоцирует новый, содержащий
+в себе данные обоих аргументов
+
+ifdef::backend-revealjs[=== !]
+
+[source, cpp]
+----
+char const* concat(
+    char const a[],
+    size_t a_size,
+    char const b[],
+    size_t b_size,
+    size_t& concat_size
+);
+----
+
+* смотрите тесты за примерами поведения
+** `a`, `b` — не(-обязательно) си-строки: размеры данных переданы отдельными аргументами
+
+=== #2 int_vector
+
+Реализуйте простой вектор интов (в одной структуре) и вспомогательные методы
+
+[source,cpp]
+----
+struct IntVector {
+    int    *data = nullptr;
+    size_t size = 0;
+    size_t capacity_ = 0;
+};
+
+void pushBack(IntVector& v, int value);
+void popBack(IntVector& v);
+void deallocate(IntVector& v);
+----
+
+ifdef::backend-revealjs[=== !]
+
+* `data` — динамический массив из `capacity_` элементов
+* Корректно обращаться к элементам `v.data[i]` при `i < v.size` (проверка выхода не нужна)
+
+ifdef::backend-revealjs[=== !]
+
+* `pushBack` — добавляет элемент в конец, выделяет новую память (*2, начинает с 1) при `size == capacity_`
+* `popBack` — "удаляет" последний элемент из массива (освобожденный `int` можно переиспользовать для новых значений)
+* `deallocate` — очищает всю память `data_`, обнуляет размеры
+
+=== #3 list of nodes: revert + cleanup
+
+[source,cpp]
+----
+struct Node {
+    int value;
+    Node* next;
+};
+----
+
+* есть односвязный список из структур `Node`
+* реализуйте функцию, разворачивающую список (`revert`)
+* реализуйте функцию, подчищающую все элементы в переданном списке (`cleanup`)
+** предполагается, что все входящие в список ноды были выделены в динамический памяти
+и всех их можно подчистить за один вызов `cleanup`
+* в реализации нельзя использовать рекурсивные вызовы
+* напишите сигнатуры самостоятельно (возвращается void; для типа аргумента — см примеры запуска)
+
+ifdef::backend-revealjs[=== !]
+
+[source,cpp]
+----
+Node* head; // inited somehow:
+/* head == addr0 -> {42, addr1} -> {24, addr2} -> {-1, null} */
+
+revert(&head);
+/* head == addr2 -> {-1, addr1} -> {24, addr0} -> {42, null} */
+cleanup(head);
+----
+
+=== #4 singleton
+
+* `singleton.hpp`
+** объявление функции `int inc()`, инкрементирующей счетчик и возвращающий его значение (начиная с нуля)
+** в `singleton.cpp` — определение
+
+ifdef::backend-revealjs[=== !]
+* `first.cpp`
+** Определение функции `int inc_first()`, вызывающей `inc`
+* `second.cpp`
+** Определение функции `int inc_second()`, вызывающей `inc`
+
+ifdef::backend-revealjs[=== !]
+
+* Ожидание: `inc_first(), inc_second(), inc_first()` — вернут 0, 1, 2, ...
+** Требование к решению: не загрязняем глобальное пространство имен!

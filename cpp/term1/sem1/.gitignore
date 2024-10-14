@@ -1,0 +1,11 @@
+cmake-*
+.idea
+*.out
+.cache
+.github
+build
+CMakeFiles
+CMakeCache.txt
+cmake_install.cmake
+smoke_task_*
+input.txt

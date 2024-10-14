@@ -1,0 +1,236 @@
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/zzqt64-4)
+= Семинар IV
+:icons: font
+:table-caption!:
+:source-highlighter: highlightjs
+:revealjs_hash: true
+:customcss: https://gistcdn.githack.com/fedochet/4ee0f4a2224ecd29a961082a0c63c020/raw/18c107982aba90bb94194c0ac3a8a5ca9bad6782/asciidoc_revealjs_custom_style.css
+:revealjs_theme: white
+:highlightjs-theme: https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@8.2/build/styles/tomorrow.min.css
+:stylesheet: main.css
+:toc:
+:toclevels: 4
+
+== CMake в дорешках
+
+* CMake выполняет задачу генерации конфигов сборочной системы
+** в нашем случае — генерирует `Makefile`
+* очень богатая функциональность
+** вводная статья на Хабре: https://habr.com/ru/post/155467/
+
+=== Использование
+
+* из консоли: `$ cmake . && make <target> # && use ./<target>`
+* в IDE: есть интеграции, все по кнопочкам (?)
+* в дорешках: будем использовать его, не Makefile
+** *NB:* в задаче `C from CPP` есть make
+** *NB:* на ближайшей контрольной _может быть_ Makefile (вашего авторства)
+
+== cast'ы и представления данных
+
+Напоминалка — виды кастов и основные предназначения:
+
+* `static_cast` — безопасное преобразование типов (с конвертацией)
+* `const_cast` — добавление/удаление квалифаера const (для указателей)
+* `reinterpret_cast` — небезопасное преобразование типов (в основном для указателей)
+
+=== Безопасное преобразование численных типов
+
+[source, cpp]
+----
+int main() {
+    float f = 42.f;
+    int i1 = static_cast<int>(f);
+    // not working
+    // int i2 = reinterpret_cast<int>(f);
+    std::cout << f << std::endl;
+    std::cout << i1 << std::endl;
+}
+----
+* иллюстрация: https://godbolt.org/z/TTG3xEcr8
+* как посмотреть значения:
+
+=== Выведем object representation
+
+* https://godbolt.org/z/f4Mzzdan1
+* приходится работать с "мелким типом" — [unsigned] char
+
+=== reinterpret_cast и aliasing (UB)
+
+* почему выше закомментированный вариант — UB?
+* не соответствует https://gist.github.com/shafik/848ae25ee209f698763cffee272a58f8#f14[strict aliasing rule]
+** правило стандарта, введенное ради оптимизаций
+** коротко: `T* t` и `U* b` (для T != U _и при ряде других условий_) указывают на разные значения
+** aliasing в смысле указателей/ссылок
+** что можно: например, object representation можно получать через [unsigned] char или std::byte
+*** для этих типов правило не применяется
+
+ifdef::backend-revealjs[=== !]
+
+* \[*] примеры возможных оптимизаций: https://godbolt.org/z/qov8v8WYM
+* пример оптимизации + нарушение SAL (через `reinterpret_cast`): https://godbolt.org/z/63MvfPY69
+** компилятор соптимизировал, основываясь на strict aliasing rule
+* NB: у `reinterpret_cast` есть и другие применения (не только для нарушения SAL)
+
+=== побитовое копирование значения (bit_cast)
+
+* чтобы обойти SAL — можно использовать временное значение и memcpy
+** `T dst; memcpy(&dst, &src, sizeof(T))`
+** `unsigned char buf[sizeof(T)]` подойдет с условиями
+* \[*]: про тип T потребуется `std::is_trivially_copyable_v<T>`
+* [C++20]: https://en.cppreference.com/w/cpp/numeric/bit_cast[bit_cast]
+** не оператор, шаблонная функция
+** \[*] умеет в constexpr
+* usage: https://godbolt.org/z/zzYbM5n4c
+
+=== просмотр паддинга
+
+* https://godbolt.org/z/jWKjGPj57
+* ок: используем `char buf` для копирования байт
+* ок: используем `FooBuf` из буффера + полей для копирования байт
+* _как при использовании FooBuf сделать UB?_
+
+== Функции
+
+=== Тип и хранение в переменных
+
+[source, cpp]
+----
+int foo(float f);
+
+int main() {
+    // foo = 10;  // *error*: non-object type 'int (float)' is not assignable
+    int(*func_ptr)(float) = foo;  // cast to  'int(*)(float)'
+}
+----
+
+=== Пример + тернарный оператор
+
+* https://godbolt.org/z/vcnGraqov
+** _попробуйте поменять сигнатуру одной из функций — что меняется?_
+
+
+=== Процесс вызова функции
+
+* поштырим на код: `clang++`, v15, с `-O0`
+** https://godbolt.org/z/77bfqafMs
+* _попробуйте повозвращать объекты побольше: например, структуры_
+
+ifdef::backend-revealjs[=== !]
+
+выводы:
+
+* много накладных расходов на стыке
+** перекладывание аргументов
+** забирание значения
+* для быстродействия полезнее inlining (подстановка тела функции в место вызова, *компилятором*)
+** inlining != *inline* (ключевое слово в плюсах — _вспомним, зачем оно?_)
+
+=== Меняем calling conventions[*]
+
+* пример с https://clang.llvm.org/docs/AttributeReference.html#regcall[`__regcall`]:
+** https://godbolt.org/z/dKvdfGT5q
+
+=== std::function [*]
+
+* продвинутый способ хранить функции/функторы в объекте, с оверхэдом[*]
+* параметризуется *типом-функцией*
+* умеет хранить и свободные функции и функторы и лямбды
+* пример: https://godbolt.org/z/EEPKojaGG
+
+== Задачи
+
+== #1 Compose [0.5 балла]
+Функции, у которых аргумент и возвращаемое значение совпадают по типам прекрасны тем, что их можно комбинировать!
+
+Реализуйте функцию `Compose` со следующей сигнатурой *[0.5 балла]*:
+[source, cpp]
+----
+using FuncT = double(*)(double);  // фиксированный тип в задаче
+
+// n - число композированных функций
+// Пример: Compose(2, f, g, 3.1415) вычисляет f(g(3.1415))
+double Compose(size_t n, ...);
+----
+
+== #2 Combine [0.5 балла]
+
+Напишите функцию combine, принимающую вектор и две функции -- `mult` и `plus`. Эта функция должна вернуть значение выражения вида:
+
+[source, cpp]
+----
+(a1 * a2) + (a3 * a4) + a5
+----
+
+для векторов нечетной длины, и
+
+[source, cpp]
+----
+(a1 * a2) + (a3 * a4) + (a5 * a6)
+----
+
+для векторов четной длины
+
+== #3 Read/Write
+
+Напишите функции для чтения/записи типизированных данных из/в массив памяти `char*`
+
+* чтение ранее записанного значения должно возвращать его же (см тесты)
+* возвращаемое значение -- указатель на участок памяти, с которого можно продолжать чтение/запись
+* в сигнатурах опущены const-ы и `&`, добавьте их!
+
+ifdef::backend-revealjs[=== !]
+
+[source,cpp]
+----
+char* read(char* data, int& out);
+char* write(char* data, int in);
+
+char* read(char* data, size_t& out);
+char* write(char* data, size_t in);
+----
+
+ifdef::backend-revealjs[=== !]
+
+[source, cpp]
+----
+char* read(char* data, char*& out);
+char* write(char* data, char* in);
+----
+
+== #4 Enumerations [0.5 балла]
+
+Любой современный человек жить не может без календарей. Тем не менее, удобных бибилиотек для работы даже с такой простой вещью как дни недели всё ещё очень мало. Ну разве что стандартная библиотека c++ приходит в голову...
+
+Давайте попробуем чуть улучшить ситуацию!
+
+ifdef::backend-revealjs[=== !]
+
+Реализуйте перечисление `WeekDay` (стабильнее, чем `enum`), определяющее дни недели, и три функции для работы с ним
+
+[source, cpp]
+----
+// Возвращает имя дня недели на английском с большой буквы
+const char *GetDayOfWeekName(WeekDay w);
+// Возвращает true для субботы и воскресенья (да простят нас некоторые нации)
+bool IsWeekend(WeekDay w);
+// По году, месяцу и дню возвращает день недели. Предполагатеся, что переданная дата корректна
+WeekDay GetDayOfWeek(size_t year, size_t month, size_t day);
+----
+
+== #5 C from CPP [0.5 балла]
+
+Требуется проиллюстрировать вызов библиотечного кода на C из C++
+
+* `sum.h`:
+** объявить функцию `int sum(int, int)`
+* `sum.c`:
+** определить функцию `int sum(int, int)`
+* `test.cpp`: подключить `sum.h`
+* `src/task_5/Makefile` (!): написать достаточный таргет `smoke_task_5`
+
+ifdef::backend-revealjs[=== !]
+
+* компилировать необходимо соответствующими компиляторами в отдельные объектные файлы (`gcc`/`clang`/`cl` для комиляции `C`)
+* в `make` для сабмита решения — используйте `g++` + `gcc`
+* в задаче нужен https://en.cppreference.com/w/cpp/language/language_linkage#Explanation[`extern "C"`]
