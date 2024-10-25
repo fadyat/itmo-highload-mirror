@@ -1,0 +1,144 @@
+= Семинар V: классы
+:icons: font
+:table-caption!:
+:example-caption!:
+:source-highlighter: highlightjs
+:revealjs_hash: true
+:customcss: https://rawcdn.githack.com/fedochet/asciidoc-revealjs-online-converter/7012d6dd12132363bbec8ba4800272ceb6d0a3e6/asciidoc_revealjs_custom_style.css
+:revealjs_theme: white
+:highlightjs-theme: https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@8.2/build/styles/tomorrow.min.css
+:stylesheet: main.css
+:toc:
+:toclevels: 4
+
+== https://en.cppreference.com/w/cpp/algorithm/swap[std::swap]
+
+* `std::swap<T>(a, b)` — меняет значения `a` и `b`
+
+[.small-code]
+[source, cpp]
+----
+// Possible implementation
+template <typename T> 
+void swap(T& t1, T& t2) {
+    T temp = std::move(t1);
+    t1 = std::move(t2);
+    t2 = std::move(temp);
+}
+----
+
+ until C++11: T - CopyConstructible and CopyAssignable (https://godbolt.org/z/z1h3WY4PM)
+ since C++11: T - MoveConstructible and MoveAssignable (https://godbolt.org/z/fWTToTaoT)
+
+=== User-defined swap
+
+> The expected way to make a program-defined type swappable is to provide a non-member function swap in the same namespace as the type
+
+https://godbolt.org/z/aejerh1dj[see godbolt]
+
+=== swap trick
+
+[small]#идиома#
+
+* aka https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Copy-and-swap[Copy-and-swap idiom]
+* идея: использовать создание временного значения + _конкретизированный_ swap
+* плюсы: код короче + strong exception safety (при noexcept-swap) [*]
+
+== дефолтные версии методов
+
+https://www.foonathan.net/2019/02/special-member-functions[Таблица]
+
+Можно сгенерировать явно с помощью `= default;`
+
+Можно удалить явно с помощью  `= delete;`
+
+== Задачи
+
+== StringView
+Реализуйте класс `StringView`:
+
+* для элементов типа `char`
+* содержимое *необязательно* c-strings
+* объект *не хранит* данные самостоятельно, а все время "смотрит" на чьи-то
+  * => вызовы методов view валидны, пока жив основной объект-держатель данных
+* можно ориентироваться на std::string_view
+
+ifdef::backend-revealjs[=== !]
+
+Нужен `npos` и методы:
+
+1. конструкторы: от си-строки, от `std::string`, от `char* + size_t` (указатель на начало + размер)
+** `char* + size_t`: необязательно си-строка!
+2. операторы присваивания: от си-строки, от `std::string`, от `StringView`
+3. `data()`, `size()` (работающие за константу)
+4. `substr` — возвращает `StringView`, принимает стартовый индекс + опциональный конечный индекс (default: `npos`)
+
+ifdef::backend-revealjs[=== !]
+
+5. `operator[]` — достает соответствующий индексу элемент
+6. `find` — возвращает индекс начала подстроки или `npos`, принимает в аргументе `StringView` или `char`
+7. `startsWith`, `endsWith` — принимает в аргументе `StringView` или `char`
+8. `findFirstOf`, `findFirstNotOf` — _same_ + опциональный стартовый индекс (default: `0`)
+9. `removePrefix` — сдвигает начало на `size_t` (аргумент), в самом объекте stringView
+
+== LazyString
+Будем разрабатывать строку:
+
+* дешево копируемую (по сравнению с std::string)
+* с методами-модификаторами (по сравнению с std::string_view)
+  * => она *будет* хранить свои данные
+* интефейс будет напоминать std::string
+
+ifdef::backend-revealjs[=== !]
+
+Реализация — через парадигму Copy-on-Write:
+
+* данные в куче — и могут быть общими для нескольких объектов
+  * например, при копировании объекта-строки, пока они не меняются по ходу программы
+* при модификации объекта если владение данными у него не эксклюзивное => сперва копируются
+
+=== SharedBuffer
+
+Реализуйте класс `SharedBuffer`
+
+* `SharedBuffer` хранит в себе (в куче) массив char и его размер
+  * данные не обязательно null-terminated! точно известен их размер
+* несколько таких объектов могут ссылаться на один и тот же участок памяти
+* когда последний из них очищается, очищается и эта память
+
+ifdef::backend-revealjs[=== !]
+
+У `SharedBuffer` должны быть следующие методы:
+
+* Конструктор от size_t и конструктор копирования
+* Оператор присваивания
+* `getSize` — возвращает размер данных
+* `getData` — возвращает аллоцированный участок памяти (указатель на него)
+* `useCount` — возвращает количество объектов, разделяющих данные (за O(1))
+
+=== LazyString
+
+Реализуйте класс `LazyString` (используя `SharedBuffer`!) c такими методами:
+
+* Дефолтный конструктор
+* Неявный конструктор от `char const*` (т.е. си-строки в данных)
+* Конструктор копирования, оператор присваивания
+
+ifdef::backend-revealjs[=== !]
+
+* `getSize`
+* `cStr`
+* `useCount`
+* `at`, возвращающий символ по индексу (копию)
+** надо проверить индекс, если выход за границы — кидайте исключение [std::out_of_range](https://en.cppreference.com/w/cpp/error/out_of_range)
+* `operator==`, внешний `operator+`, `operator+=`
+
+=== CharWrapper
+Реализуйте `LazyString::operator[]`, возвращающий специальную обертку над символом строки
+
+* частично поддерживающую интерфейс `char&`: элемент можно сравнивать, присваивать, инкрементить
+* при этом если `useCount > 1`:
+** копирование строчки не происходит при read-only инструкциях (`s[2] == 'a'`)
+** а происходит только на изменении данных (`s[2] = 'a'`)
+
+ifdef::backend-revealjs[=== !]

@@ -1,0 +1,44 @@
+{
+  "tests": [
+    {
+      "name": "smoke_task_1",
+      "setup": "",
+      "run": "cmake . && make string_view_test && ./string_view_test",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": null
+    },
+    {
+      "name": "smoke_task_2_shared_buffer",
+      "setup": "",
+      "run": "cmake . && make shared_buffer_test && ./shared_buffer_test",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": null
+    },
+    {
+      "name": "smoke_task_2_lazy_string",
+      "setup": "",
+      "run": "cmake . && make lazy_string_test && ./lazy_string_test",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": null
+    },
+    {
+      "name": "smoke_task_2_lazy_string_access_op",
+      "setup": "",
+      "run": "cmake . && make lazy_string_access_op_test && ./lazy_string_access_op_test",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": null
+    }
+  ]
+}
