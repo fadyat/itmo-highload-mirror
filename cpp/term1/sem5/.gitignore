@@ -1,3 +1,11 @@
 .vs
 .idea
 cmake-*
+Makefile
+CMakeFiles
+cmake_install.cmake
+CMakeCache.txt
+string_view_test
+shared_buffer_test
+lazy_string_test
+lazy_string_access_op_test
