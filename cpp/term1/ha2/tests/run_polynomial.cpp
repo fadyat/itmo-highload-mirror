@@ -42,6 +42,13 @@ void check_at()
     assert(p.at(0) == 1);
     assert(p.at(1) == 2);
     assert(p(1) == 3);
+    
+    p.at(2) = 322;
+
+    assert(p.at(0) == 1);
+    assert(p.at(1) == 2);
+    assert(p.at(2) == 322);
+    assert(p(2) == 1293); // 322 * 4 + 2 * 2 + 1
 }
 
 void check_const_at()

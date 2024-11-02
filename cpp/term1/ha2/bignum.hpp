@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -16,10 +15,11 @@ namespace mp {
 
 class bignum {
   private:
+    static constexpr uint64_t pow2_32 = static_cast<uint64_t>(1) << 32;
     std::vector<uint32_t> numbers_;
 
   public:
-    bignum() = default;
+    bignum();
     bignum(uint32_t);
     explicit bignum(const std::string &);
 
@@ -41,9 +41,11 @@ class bignum {
     bignum &operator*=(const bignum &);
 
   private:
-    void remove_leading_zeros();
+    void remove_leading_zeros(bool keep_at_least_one = true);
     char extract_last_digit();
 };
+
+inline bignum::bignum() : numbers_{0} {}
 
 inline std::ostream &operator<<(std::ostream &os, const mp::bignum &n) {
     os << n.to_string();
@@ -57,22 +59,21 @@ inline std::istream &operator>>(std::istream &is, mp::bignum &n) {
     return is;
 }
 
-inline void bignum::remove_leading_zeros() {
-    while (!numbers_.empty() && numbers_.back() == 0) {
+inline void bignum::remove_leading_zeros(bool keep_at_least_one) {
+    while ((keep_at_least_one ? numbers_.size() > 1 : !numbers_.empty()) && numbers_.back() == 0) {
         numbers_.pop_back();
     }
 }
 
 inline char bignum::extract_last_digit() {
     uint64_t carry = 0;
-    uint64_t pow2_32 = static_cast<uint64_t>(1) << 32;
     for (size_t i = numbers_.size(); i > 0; --i) {
         uint64_t current = pow2_32 * carry + static_cast<uint64_t>(numbers_[i - 1]);
         numbers_[i - 1] = static_cast<uint32_t>(current / 10);
         carry = current % 10;
     }
 
-    remove_leading_zeros();
+    remove_leading_zeros(false);
     return static_cast<char>(carry + '0');
 }
 
@@ -84,9 +85,9 @@ inline mp::bignum operator+(const mp::bignum &lhs, const mp::bignum &rhs) {
 
     uint64_t carry = 0;
     for (std::size_t i = 0; i < size; ++i) {
-        uint32_t a = i < lhs.numbers_.size() ? lhs.numbers_[i] : 0;
-        uint32_t b = i < rhs.numbers_.size() ? rhs.numbers_[i] : 0;
-        uint64_t sum = carry + static_cast<uint64_t>(a) + static_cast<uint64_t>(b);
+        uint64_t a = i < lhs.numbers_.size() ? lhs.numbers_[i] : 0;
+        uint64_t b = i < rhs.numbers_.size() ? rhs.numbers_[i] : 0;
+        uint64_t sum = carry + a + b;
 
         result.numbers_[i] = static_cast<uint32_t>(sum);
         carry = sum >> 32;
@@ -120,11 +121,7 @@ inline mp::bignum operator*(const mp::bignum &lhs, const mp::bignum &rhs) {
 
 } // namespace mp
 
-inline mp::bignum::bignum(uint32_t n) {
-    if (n != 0) {
-        numbers_.push_back(n);
-    }
-}
+inline mp::bignum::bignum(uint32_t n) { numbers_.push_back(n); }
 
 inline mp::bignum::bignum(const std::string &s) {
     std::size_t size = s.size();
@@ -137,19 +134,15 @@ inline mp::bignum::bignum(const std::string &s) {
     }
 }
 
-inline mp::bignum::operator uint32_t() const { return numbers_.empty() ? 0 : numbers_.front(); }
+inline mp::bignum::operator uint32_t() const { return numbers_.front(); }
 
-inline mp::bignum::operator bool() const { return !numbers_.empty(); }
+inline mp::bignum::operator bool() const { return (numbers_.size() != 1 || numbers_.front() != 0); }
 
 inline std::string mp::bignum::to_string() const {
-    if (!*this) {
-        return "0";
-    }
-
     mp::bignum copy = *this;
     std::string result;
 
-    while (copy) {
+    while (!copy.numbers_.empty()) {
         result.push_back(copy.extract_last_digit());
     }
 
@@ -210,7 +203,10 @@ inline polynomial::polynomial(const std::string &s) {
 
 inline uint32_t polynomial::at(std::size_t x) const { return coef_.at(x); }
 
-inline uint32_t &polynomial::at(std::size_t x) { return coef_.at(x); }
+inline uint32_t &polynomial::at(std::size_t x) {
+    coef_.resize(std::max(coef_.size(), x + 1), 0);
+    return coef_.at(x);
+}
 
 template <typename T> inline T polynomial::operator()(const T &x) const {
     return std::accumulate(coef_.rbegin(), coef_.rend(), T(0), [&](T res, const T &coef) { return res * x + coef; });
