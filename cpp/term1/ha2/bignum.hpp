@@ -15,7 +15,7 @@ namespace mp {
 
 class bignum {
   private:
-    static constexpr uint64_t pow2_32 = static_cast<uint64_t>(1) << 32;
+    static constexpr uint64_t pow2_32 = 1ull << 32;
     std::vector<uint32_t> numbers_;
 
   public:
