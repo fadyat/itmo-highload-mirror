@@ -1,0 +1,19 @@
+Test nl: .gitignore passed
+Test nl: pyproject.toml passed
+Test nl: nl.py passed
+Test nl: not_exists passed
+Test tail: .gitignore passed
+Test tail: .gitignore passed
+Test tail: pyproject.toml passed
+Test tail: pyproject.toml passed
+Test tail: tail.py passed
+Test tail: tail.py passed
+Test tail: .gitignore pyproject.toml tail.py passed
+Test tail: .gitignore pyproject.toml tail.py passed
+Test tail: .gitignore not_exists . tail.py passed
+Test tail: .gitignore not_exists . tail.py passed
+Test wc: .gitignore passed
+Test wc: pyproject.toml passed
+Test wc: wc.py passed
+Test wc: .gitignore pyproject.toml wc.py passed
+Test wc: .gitignore not_exists . wc.py passed

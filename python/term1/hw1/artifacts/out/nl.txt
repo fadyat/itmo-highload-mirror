@@ -1,0 +1,17 @@
+     1	[tool.poetry]
+     2	name = "hw1"
+     3	version = "0.1.0"
+     4	description = ""
+     5	authors = ["fadyat <fadyat@icloud.com>"]
+     6	readme = "README.md"
+     7	
+     8	[tool.poetry.dependencies]
+     9	python = "^3.13"
+    10	
+    11	
+    12	[tool.poetry.group.dev.dependencies]
+    13	ruff = "^0.7.3"
+    14	
+    15	[build-system]
+    16	requires = ["poetry-core"]
+    17	build-backend = "poetry.core.masonry.api"

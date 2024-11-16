@@ -1,0 +1,358 @@
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/SSop1Qjw)
+
+
+= Семинар VI
+:icons: font
+:table-caption!:
+:example-caption!:
+:source-highlighter: highlightjs
+:revealjs_hash: true
+:customcss: https://gistcdn.githack.com/fedochet/4ee0f4a2224ecd29a961082a0c63c020/raw/18c107982aba90bb94194c0ac3a8a5ca9bad6782/asciidoc_revealjs_custom_style.css
+:revealjs_theme: white
+:highlightjs-theme: https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@8.2/build/styles/tomorrow.min.css:stylesheet: main.css
+:toc:
+:toclevels: 4
+
+== std::vector<T>
+
+* динамический контейнер над массивом данных, хранящий объекты типа T
+** NB: T — шаблонный параметр (+ есть другие)
+** данные хранятся в куче
+* удобный https://en.cppreference.com/w/cpp/container/vector#Member_functions[интерфейс]: `operator[]` доступа по индексу, `push_back`, `pop_back`, `resize`, ...
+
+ifdef::backend-revealjs[=== !]
+
+* `std::vector<T>` — владеющий памятью [*]:
+** данные копируются в собственную память (в конструкторах/операторах=)
+** очищаются (в деструкторах)
+
+ifdef::backend-revealjs[=== !]
+
+[source, cpp]
+----
+vector<int> empty_vec;
+vector<int> another{};
+
+vector<double> with_values {1, 2, 3.4, 42, 24.};
+
+vector<double> copy(with_values);
+vector<double> another_copy = copy;
+----
+
+* `copy.size()` ?
+* `sizeof(copy)` ?
+
+ifdef::backend-revealjs[=== !]
+
+`v.size() <= v.capacity()` — в динамической части:
+
+* хранимая память при нехватке места увеличивается на *2
+* layout: `|0|1|...|size-1|....|capacity-1|`
+** часть ячеек занята значениями: `i < size`
+** часть ячеек свободна (без существующих объектов): `size <= i < capacity`
+* `new T[n]` подходит для реализации?
+
+== Ассоциативные контейнеры в STL
+
+* https://en.cppreference.com/w/cpp/container/map[std::map]
+* https://en.cppreference.com/w/cpp/container/unordered_map[std::unordered_map]
+** шаблонные от `KeyType`, `ValueType`, ...
+** по ключу хранят значения
+** notes: find, operator[], emplace
+* (по остаточному принципу) godbolt про виртуальные методы
+
+=== `map` vs `unordered_map`
+
+|===
+| Контейнер             | `std::map`                   | `std::unordered_map`
+
+| Внутренняя структура    | Самобалансирующееся двоичное дерево поиска (обычно красно-чёрное) | Хеш-таблица
+| Порядок элементов       | Упорядочены по ключу   | Неупорядочены
+| Время доступа           | O(log n)                   | В среднем O(1), в худшем случае O(n)
+| Потребление памяти        | Меньше (из-за структуры дерева) | Больше (из-за избыточности разрешения коллизий методом цепочек)
+| Итерация                | Упорядоченно (сортировка по ключам) | Неупорядоченно
+|===
+
+=== `map` vs `unordered_map` - 2
+
+Эта разность отражается в интерфейсах:
+
+[source,c++]
+----
+template<
+    class Key,
+    class T,
+    class Compare = std::less<Key>,
+    class Allocator = std::allocator<std::pair<const Key, T>>
+
+> class map;
+----
+
+[source,c++]
+----
+template<
+    class Key,
+    class T,
+    class Hash = std::hash<Key>,
+    class KeyEqual = std::equal_to<Key>,
+    class Allocator = std::allocator<std::pair<const Key, T>>
+
+> class unordered_map;
+----
+
+=== operator[] (subscript) 
+
+[source,c++]
+----
+#include <iostream>
+#include <map>
+
+int main() {
+    std::map<int, std::string> m;
+    m[1] = "one";       // Inserts {1, "one"}
+    std::cout << m[1];  // Outputs: one
+
+    std::cout << m[2];  // Inserts {2, ""} (default-constructed std::string)
+    std::cout << m.size(); // Outputs: 2
+
+    return 0;
+}
+----
+
+=== emplace
+
+[source,c++]
+----
+#include <iostream>
+#include <map>
+
+int main() {
+    std::map<int, std::string> m;
+    m.emplace(1, "one");  // Efficient insertion
+    m.emplace(1, "uno");  // Does not insert; key 1 already exists
+
+    std::cout << m[1];    // Outputs: one
+
+    return 0;
+}
+----
+
+=== find
+
+[source,c++]
+----
+#include <iostream>
+#include <map>
+
+int main() {
+    std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
+
+    auto it = m.find(2);
+    if (it != m.end()) {
+        std::cout << it->second; // Outputs: two
+    }
+
+    return 0;
+}
+----
+
+=== contains (since C++ 20)
+
+[source,c++]
+----
+#include <iostream>
+#include <map>
+
+int main() {
+    std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
+
+    if (m.contains(2)) {
+        std::cout << "Key 2 exists";
+    }
+
+    return 0;
+}
+----
+
+=== at
+
+[source,c++]
+----
+#include <iostream>
+#include <map>
+
+int main() {
+    std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
+
+    try {
+        std::cout << m.at(2); // Outputs: two
+        std::cout << m.at(3); // Throws std::out_of_range
+    } catch (const std::out_of_range& e) {
+        std::cout << "Key not found";
+    }
+
+    return 0;
+}
+----
+
+=== m[a]=b vs m.emplace(a, b)
+
+godbolt: https://godbolt.org/z/hdcnG911q
+
+=== find vs contains + at/operator[]
+
+[source,c++]
+----
+    std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
+
+    auto it = m.find(2); // O(log N)
+    if (it != m.end()) {
+        std::cout << it->second;
+    }
+    // versus
+    std::map<int, std::string> m = {{1, "one"}, {2, "two"}};
+
+    if (m.contains(2)) { // O(log N)
+        std::cout << m.at(2); // O(log N)
+    }
+----
+
+== Classes in asm [*]
+
+* *разгладываем godbolt*: https://godbolt.org/z/KWrb5f77x[link]
+** поискать передачу this-аргумента
+** заметить модификатор `noexcept`, убрать [**]
+
+=== Inheritance + layout
+
+* *разгладываем godbolt*: https://godbolt.org/z/Gc6P5bb5r[link] — задачи:
+** посмотреть на выхлоп `-Xclang -fdump-record-layouts`
+** увидеть layout полей и их использование в коде (+ наследование от `C`)
+** поискать ошибки
+
+=== in dynamic memory
+
+* *разглядываем похожий godbolt*: https://godbolt.org/z/xMoMGjPh9[link]:
+** поискать ошибки — сделать и починить правильно
+** посмотреть на layout (record-layouts + использование в коде)
+** [*] усложнить схему нетривиальным полем
+
+=== Покурим godbolt про вызовы виртуальных методов
+
+* https://godbolt.org/z/vK8dsx4oM[link]
+
+
+== Задачки
+
+* Функциональность должна быть реализована в пространстве имён `cls_06`
+* Помните про дефолтные реализации методов (скрывайте их для классов-менеджеров памяти)
+
+== Библиотека стримов
+
+В первой части будем реализовывать свою библиотеку полиморфных стримов.
+
+Имена файлов (sic!), в которых следует реализовывать решение,
+определите, исходя из CMakeLists и прилагаемых тестов (не все они добавлены в репозиторий)
+
+ifdef::backend-revealjs[=== !]
+
+* Есть базовый класс `my_ostream` с виртуальными методами
+* Есть несколько наследников `my_ostream`
+* Стримы умеют выводить в поток три типа: `int`, `double`, `string`
+
+=== Пример кода
+
+[source,cpp]
+----
+my_ostream_con cout;                    // console output
+my_ostream_file cerr("errors.txt");     // file output
+my_ostream_db dbout(...);               // db output
+
+int main() {
+  std::vector<my_ostream*> stream_ptrs = {&cout, &cerr, &dbout};
+  for (auto stream_ptr : stream_ptrs)
+    (*stream_ptr) << "Hello world on console!" << "\n"
+                  << 1 << 2 << 3 << 4 << "\n"
+                  << 777.777 <<  "\n";
+
+  return 0;
+}
+----
+
+=== Задача #1.1 (0.5 балла)
+
+Реализовать базовый класс `my_ostream`, одного наследника `my_ostream_con` для вывода данных в консоль
+
+Должен поддерживаться вывод: `int`, `double`, `std::string`
+
+
+=== Задача #1.2 (0.5 балла)
+
+Реализовать наследника `my_ostream_file`, который выводит данные в файл. Попробуйте использовать стримы полиморфно, как на слайде предисловия (положить указатели в вектор и записать что-нибудь одновременно в два стрима).
+
+Работа с файлом должна быть корректной (файл должен быть закрыт после того, как объект `my_ostream_file` уничтожен)
+
+=== Задача #1.3 (0.5 балла)
+
+Реализовать наследника `my_ostream_combo`, который принимает в конструкторе два стрима и комбинирует их. Т.е. при записи в такой стрим, информация записывается во оба переданных ему в конструктор стрима.
+
+== Задача #2 (1.5 балла)
+
+Пишем индекс для поиска над корпусом текстов
+
+* _посмотрим заголовочник для интерфейса_
+* контент документов:
+** на английском
+** без заглавных букв
+
+ifdef::backend-revealjs[=== !]
+
+* надо предподсчитать все необходимое в конструкторе индекса
+** разделяем на лексемы по https://en.cppreference.com/w/cpp/string/byte/isspace[isspace], https://en.cppreference.com/w/cpp/string/byte/ispunct[ispunct]
+** можно использовать `<regex>` (*)
+** => поиск выполняем быстро (метод `find` )
+* возвращать надо списки указателей на документы (без копирований)
+
+
+== Задача #3 [*] (2 балла)
+
+Пишем sizeof!
+
+Хотим реализовать функцию `size_t GetSize(const std::string& struct)` возвращающую то же, что вернет `sizeof()` описанной структуры в с++.
+
+* поля типов char, short, int, float, double (1 балл)
+* возможно спецификаторы полей `alignas(n)`, где n - степень двойки *(+ 1 балл)*
+
+ifdef::backend-revealjs[=== !]
+В данном случае мы делаем следующие допущения
+
+* Решение будет не портабельно, ибо паддинги и выравнивания не строго специфицированы по стандарту.
+Мы миримся с этим: на стандартных свежих компиляторах gcc/clang ожидаем одинаковое поведение.
+* Полагаем в данной задаче, что у нас архитектура x64, размеры char, short, int, long соответственно 1, 2, 4, 8 байт
+
+ifdef::backend-revealjs[=== !]
+
+Пример строки с описанием структуры
+[source,cpp]
+----
+struct A {
+  int x;
+  char y;
+  alignas(16) char z;
+};
+----
+
+Парсинг строки рекомендуется делать с помощью https://en.cppreference.com/w/cpp/header/regex[<regex>]
+
+Про выравнивание и паддинг еще раз можно почитать https://en.cppreference.com/w/c/language/object[тут] (+ в лекционных материалах)
+
+ifdef::backend-revealjs[=== !]
+
+Гарантируется, что:
+
+* наследования нет
+* внутри структуры присутствуют только определения полей
+* модификатор `alignas(...)` может присутствовать только около поля и содержит внутри себя числовое значение
+* определения полей разделены между собой точкой с запятой (`;`), см. пример
+* поля в структуре не инициализируются
+* имеется всегда только одна пара фигурных скобок - в начале и в конце определения структуры
