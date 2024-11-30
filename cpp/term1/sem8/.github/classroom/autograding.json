@@ -1,0 +1,44 @@
+{
+  "tests": [
+    {
+      "name": "smoke_task_1",
+      "setup": "",
+      "run": "cmake . && make task-1-test && ./task-1-test",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "smoke_task_2",
+      "setup": "",
+      "run": "cmake . && make task-2-test && ./task-2-test",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "smoke_task_3",
+      "setup": "",
+      "run": "cmake . && make task-3-test && ./task-3-test",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "smoke_task_3_test_custom_comparator",
+      "setup": "",
+      "run": "cmake . && make task-3-test-custom-comparator && ./task-3-test-custom-comparator",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 0.5
+    }
+  ]
+}

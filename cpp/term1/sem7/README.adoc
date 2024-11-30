@@ -1,0 +1,365 @@
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/DVnTPqCz)
+
+= Семинар VII
+:icons: font
+:table-caption!:
+:example-caption!:
+:source-highlighter: highlightjs
+:revealjs_hash: true
+:customcss: https://rawcdn.githack.com/fedochet/asciidoc-revealjs-online-converter/7012d6dd12132363bbec8ba4800272ceb6d0a3e6/asciidoc_revealjs_custom_style.css
+:revealjs_theme: blood
+:stylesheet: main.css
+:toc:
+:toclevels: 4
+
+== c++ casts
+
+* в плюсах есть преобразования типов: приведения значений выражений к другим типам
+
+[source,cpp]
+----
+// int i = 42;
+i + 24.f;
+static_cast<double>(i);
+----
+
+ifdef::backend-revealjs[=== !]
+
+* рассмотрим специальные операторы, делающие *явные* преобразования типов — в т.ч. их:
+** применимость (что можно делать; рассмотрим не все)
+** безопасность (защита + вероятность UB)
+** оверхэд в рантайме (какие инструкции попадают на стадию исполнения)
+
+=== https://en.cppreference.com/w/cpp/language/static_cast[static_cast]
+
+* обеспечивает некоторые compile-time проверки
+* местами безопасность на стороне пользователя
+* в рантайме нетривиальные инструкции (чаще всего)
+* 10 пунктов на cppref:
+
+ifdef::backend-revealjs[=== !]
+
+* встроенные преобразования для базовых типов + определенные для пользовательских:
+
+[source,cpp]
+----
+int i = 42;
+static_cast<double>(i);  // built-in
+
+LazyString s = "hello";
+CharWrapper cw = s[2];
+static_cast<char>(cw);  // CharWrapper::operator char()
+----
+
+ifdef::backend-revealjs[=== !]
+
+* enum values to int, etc
+* array-to-pointer, function-to-pointer, ...
+* to void
+* pointers conversions:
+
+[source,cpp]
+----
+int *p;
+static_cast<const int *>(p);
+static_cast<void *>(p);
+
+// compile time error
+static_cast<double *>(p);
+
+// possible, but UB: no checks with static_cast
+//                   + invalid pointer to double
+static_cast<double *>(static_cast<void *>(p));
+----
+
+ifdef::backend-revealjs[=== !]
+
+* up/down-casts: преобразования указателей на типы по иерархии наследования
+
+[source,cpp]
+----
+struct B { /* ... */ };
+struct D: B { /* ... */ };
+
+D* d = new D;
+B* b = d;            // implicit upcast
+static_cast<B*>(d);  // upcast
+static_cast<D*>(b);  // downcast (no checks with static_cast; but ok)
+
+static_cast<D*>(new B);  // downcast: no checks with
+                         // static_cast => UB
+----
+
+
+=== https://en.cppreference.com/w/cpp/language/const_cast[const_cast]
+
+* добавляет, убирает const, volatile (cv-)модификаторы
+* оверхэд: не меняет значение адреса
+* безопасность на стороне пользователя
+
+[source,cpp]
+----
+const int i = 42;
+int* pi = const_cast<int*>(&i);
+----
+
+
+=== https://en.cppreference.com/w/cpp/language/reinterpret_cast[reinterpret_cast]
+
+* оверхэд: не меняет значение адреса
+* безопасность на стороне пользователя
+* 11 пунктов на cppref, основное:
+
+ifdef::backend-revealjs[=== !]
+
+* integers to pointers
+* pointers to other pointers (+ refs)
+
+[source,cpp]
+----
+const int i = 42;
+reinterpret_cast<char*>(i);
+
+reinterpret_cast<char*>(0);
+
+int *pi;
+reinterpret_cast<char*>(pi);
+----
+
+=== C-style casts
+
+* п.1 https://en.cppreference.com/w/cpp/language/explicit_cast[тут] — обратная совместимость с C
+** можно выразить через новые операторы `*_cast` => не используем
+
+[source,cpp]
+----
+// (SomeType)value;
+(float)42;
+(int *)24;
+(void)p;
+----
+
+=== https://en.cppreference.com/w/cpp/language/dynamic_cast[dynamic_cast]
+
+* поддерживает только указатели/ссылки, самое частое — указатели из иерархии наследования
+** если целевой тип — полиморфный: есть проверка типов, используется `type_info`
+** иначе — как и static_cast (upcast ок; downcast с ответственностью)
+* `dynamic_cast<void*>(<polymorphic-type>)` — возвращает указатель на начало объекта
+
+ifdef::backend-revealjs[=== !]
+
+[source,cpp]
+----
+struct B { /* ... */ };
+struct D: B { /* ... */ };
+
+assert(dynamic_cast<D*>(new B) == nullptr);
+----
+
+== casts in inheritance
+
+* _live-coding: повыводим смещения классов в иерархии наследований_, https://godbolt.org/z/58KjqnPeq[заготовка]
+** _для случая обычных и полиморфных типов_
+* _(*) посмотреть на размещение type_info, vtable при конструировании_
+
+== new, delete, placement, overloading
+
+* напоминание
+
+ifdef::backend-revealjs[=== !]
+
+* https://en.cppreference.com/w/cpp/language/new[new]:
+1. memory allocation
+2. object construction
+3. address returning
+
+* https://en.cppreference.com/w/cpp/language/delete[delete]
+1. object destruction
+2. memory deallocation
+
+* https://godbolt.org/z/7bezdEsKf[godbolt из прошлого]
+
+=== new&delete overloading
+Возможны два переопределения:
+
+* global operator new/delete, https://godbolt.org/z/MGozq3bhE[godbolt]
+* class member operator new/delete, https://godbolt.org/z/c67n84M3Y[godbolt]
+** static: нет this
+
+ifdef::backend-revealjs[=== !]
+
+Когда полезно:
+
+1. Debugging/Logging
+2. Perf (custom allocations, arenas)
+3. Garbage collecting
+4. ...
+
+== placement new
+
+[source,cpp]
+----
+ new (<params>) T(<initializer>)
+----
+
+* `<params>` могут быть разными, https://en.cppreference.com/w/cpp/memory/new/operator_new[варианты на cppreference]
+* если `<params>` — 1шт `void*`: это non-allocating версия
+
+ifdef::backend-revealjs[=== !]
+
+* `new (buf) T;`
+** конструирует объект на уже подготовленном участке памяти
+** буффер должен быть корректным для размещения объекта, иначе UB
+** надо не забывать удалить объект *явно*
+* _live-coding: пишем самостоятельное конструирование объектов на стеке, https://godbolt.org/z/aEjvebW1b[заготовка]_
+
+=== usages
+
+* нужен в редких случаях, примеры:
+** `union` (variant) — чтобы хранить _один из_ объектов на одной памяти
+** vector (или Arena в общем случае) — когда _выделение_ памяти и _конструкция/уничтожение_ разнесены по времени
+*** size <= capacity: память есть, объектов нет
+** ...
+
+=== custom args [*]
+* placement new — это любая версия оператора с более чем одним аргументом, еще раз https://en.cppreference.com/w/cpp/memory/new/operator_new[варианты]
+** есть версии с alignment-агрументом: https://www.cppstories.com/2019/08/newnew-align/[ссылочка на статью]
+* new + exception: если конструктор кидает исключение, вызывается та версия `delete`, которая соответствует использованной `new`
+
+== union, variant
+
+=== Union
+
+* хранит только один из своих объектов в каждый момент времени
+* в какой member последний раз записали — тот и можно читать
+** читать остальные — UB
+* можно объявлять конструкторы (с [c++11])
+* small example: https://godbolt.org/z/8T6Y7P31T[godbolt]
+
+ifdef::backend-revealjs[=== !]
+
+Плюсы union — *наглядны, когда основной тип один*:
+
+* корректно определяет хранилище, куда можно разместить `T`
+** более подходящий, чем `... char[sizeof(T)]`
+** лучше подходит для constexpt-вычислений [*]
+
+ifdef::backend-revealjs[=== !]
+
+Проблемы union — необходимость:
+
+* "помнить", какой объект сейчас сохранен (если нетривиальных типов несколько)
+* не забывать звать деструктор явно
+** внутри обертки-контейнера — более-менее
+** в сыром виде в пользовательском коде — хочется RAII обертку...
+
+=== https://en.cppreference.com/w/cpp/utility/variant[`std::variant`]
+
+Решение: используйте `std::variant` [c++17]
+
+* *cм. пример использования в доке*
+* \[?\] что внутри variant?
+
+== Задачки
+
+* помещаем решения в `namespace cls07`
+
+== JSON value (без арены) [1 балл]
+
+Будем реализовывать прототип `json` — структуру, значения которой могут быть:
+
+* `null`
+* `bool`
+* `int`
+* unicode string bytes (`std::string`)
+* array of `jsons`
+
+NB: подразумевается использование `std::variant`
+
+=== example
+
+[source, cpp]
+----
+JsonValue j;
+assert(j.IsNull());
+
+// switch to int
+j = 42;
+assert(j.GetInt() + 24 == 66);
+
+// switch to array, implicitly
+j.Append(42);
+j.Append("foo");
+j[0] = "ok";
+
+JsonValue::ListType lstObject;  // type aliases
+----
+
+=== interface
+* Констукторы:
+** дефолтный (-> `null`)
+** от значений типов bool, int, char (делает строку), std::string
+** копирования
+* `operator=` — достаточные, чтобы компилировались выражения
+** `j = <bool-value | int-value | char-value | string-value>`
+** *понять, каких форм хватит*
+* Проверки типа хранимого значения: `IsNull`, `IsBool`, ....
+* Геттеры: `GetBool`, `GetArray`, ... (без параметров)
+** неконстантные — при необходимости меняют хранимый тип
+** константные — при несоответствии типа кидают исключение (см. `std::bad_variant_access`)
+* `SetNull`
+* `Append`: добавляет аргумент в значение-список
+* `operator[]` от `size_t` — достает элемент по индексу из значения-листа
+** определен только на уже готовом json-списке не меньшей длины
+
+=== notes
+* для хранения данных используйте std::variant
+* реализуем пониженную типобезопасность:
+** если метод не соответствует типу хранимого значения (GetSmth неконстантый, Append)
+** то это значение меняется на лету:
+*** например, на последнем методе в `JsonValue j = "aaa"; j.Append(42);`
+*** сохраненные данные строчки полностью удаляются
+*** новый список инициализируется (и принимает `42`)
+
+== Leak Detector [2 балла]
+
+Напишем очень простенький leak detector. Его использование в программе (интерфейс):
+
+1. повыделять объекты через new, поудалять через delete
+2. в конце узнать, какая память осталась неочищенной, i.e. вывести адреса, которые:
+** были получены через new
+** не были освобождены через delete
+
+=== что нужно от "аллокатора"
+
+* собственные глобальные operator new/delete
+* пусть выделяют память на фиксированном статичном участке памяти
+** на глобальном, например, `char pool[65536];`
+** не в динамике
+
+=== что нужно от LeakDetector
+
+`struct LeakDetector` — вызывается в момент (завершения), когда нужно обнаружить все утечки. Ему нужны:
+
+* дефолтные конструктор, деструктор
+
+ifdef::backend-revealjs[=== !]
+
+* `void* GetNextLeakedAddress()` — возвращает неосвобожденные адреса
+** если неосвобожденных адресов больше нет, то возвращать `0x0`
+** иначе — следующий (по возрастанию) неосвобожденный адрес
+** гарантируется, что не будет выделения памяти между вызовами `GetNextLeakedAddress`
+*** одного и того же `LeakDetector`
+
+=== послабления и хинты
+
+Можно:
+
+* хранить когда-либо выделенные участки в виде (самописного) связанного списка
+** лучше хранить в "пуле": с каждым участком памяти выделять блок под необходимую мета-информацию (см `struct Meta`)
+
+ifdef::backend-revealjs[=== !]
+
+* искать новый участок памяти за O(n) выделенных ранее блоков
+* переиспользовать ранее выделенный (и затем освобожденный!) участок памяти
+** если его размер не меньше запрашиваемого

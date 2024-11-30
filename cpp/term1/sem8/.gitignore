@@ -1,0 +1,9 @@
+.vs
+.idea
+cmake-*
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles
+Makefile
+build
+task-*

@@ -1,0 +1,6 @@
+.venv
+__pycache__
+output.aux
+output.log
+dist
+*.egg-info

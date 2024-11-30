@@ -1,0 +1,9 @@
+services:
+  tex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tex
+    tty: true
+    volumes:
+      - .:/workspace
