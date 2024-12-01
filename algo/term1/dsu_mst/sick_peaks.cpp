@@ -5,75 +5,63 @@ using namespace std;
 
 enum class QueryType { SICK, FIND };
 
-class DSU {
-  private:
-    vector<int> parent, rank, nearest_sick;
+struct Node {
+    int idx;
+    Node *parent;
+    bool is_sick = false;
+    int parent_before_sick = -1;
 
-  public:
-    DSU(int n) : parent(n), rank(n, 0), nearest_sick(n) {
-        for (int i = 0; i < n; i++) {
-            parent[i] = i;
-            nearest_sick[i] = -1;
-        }
-    }
+    Node(int idx, Node *parent) : idx(idx), parent(parent) {}
 
-    int find(int u) { return parent[u] == u ? u : parent[u] = find(parent[u]); }
-
-    void unite(int u, int v) {
-        u = find(u);
-        v = find(v);
-
-        if (u == v) {
-            return;
-        }
-
-        if (rank[u] < rank[v]) {
-            swap(u, v);
-        }
-
-        parent[v] = u;
-        if (rank[u] == rank[v]) {
-            rank[u]++;
-        }
-
-        // if (nearest_sick[v] != -1 && (nearest_sick[u] == -1 || nearest_sick[u] > nearest_sick[v])) {
-        // nearest_sick[u] = nearest_sick[v];
-        // }
-        //
-
-        // show();
-    }
-
-    int get_nearest_sick(int u) {
-        while (u != -1) {
-            if (nearest_sick[u] != -1) {
-                return nearest_sick[u];
-            }
-
-            u = parent[u];
-        }
-
-        return -1;
-    }
-
-    void set_sick(int u) { nearest_sick[find(u)] = u; }
-
-    void show() {
-        for (int i = 0; i < parent.size(); i++) {
-            cout << parent[i] << " ";
-        }
-        cout << "-----" << endl;
+    void sick() {
+        is_sick = true;
+        parent_before_sick = parent == nullptr ? -1 : parent->idx;
+        parent = nullptr;
     }
 };
+
+vector<Node *> nodes;
+
+Node *find(int idx) {
+    return nodes[idx]->parent == nullptr ? nodes[idx] : nodes[idx]->parent = find(nodes[idx]->parent->idx);
+}
+
+void unite(int idx, int pidx) {
+    if (idx == 0) {
+        nodes[idx]->is_sick = false;
+        return;
+    }
+
+    Node *child = find(idx);
+    Node *parent = find(pidx);
+
+    if (child->parent == nullptr) {
+        child->parent = parent;
+        child->is_sick = false;
+    }
+}
+
+Node *get_closest_sick(int idx) {
+    if (nodes[idx]->is_sick) {
+        return nodes[idx];
+    }
+
+    Node *parent = find(idx);
+    return parent == nullptr ? nullptr : parent->is_sick ? parent : nullptr;
+}
 
 void solve() {
     int e, q;
     cin >> e >> q;
 
-    vector<int> p(e, -1);
+    nodes.resize(e);
+    nodes[0] = new Node(0, nullptr);
+
     for (int i = 1; i < e; i++) {
-        cin >> p[i];
-        --p[i];
+        int p;
+        cin >> p;
+
+        nodes[i] = new Node(i, nodes[--p]);
     }
 
     vector<pair<QueryType, int>> queries;
@@ -85,28 +73,20 @@ void solve() {
         v--;
 
         if (type == "-") {
+            nodes[v]->sick();
             queries.push_back({QueryType::SICK, v});
         } else {
             queries.push_back({QueryType::FIND, v});
         }
     }
 
-    // dsu должно состоять из множеств живых вершин, потом мы инвертируем заболевание за счет
-    // обратного порядка запросов и объединения множеств
-    DSU dsu(e);
     vector<int> result;
-
-    // building dsu
-    for (int i = 0; i < e; i++) {
-        dsu.unite(i, p[i]);
-    }
-
-    dsu.show();
     for (auto it = queries.rbegin(); it != queries.rend(); it++) {
         if (it->first == QueryType::SICK) {
-            dsu.set_sick(it->second);
+            unite(it->second, nodes[it->second]->parent_before_sick);
         } else {
-            result.push_back(dsu.get_nearest_sick(it->second));
+            Node *closest_sick = get_closest_sick(it->second);
+            result.push_back(closest_sick == nullptr ? -1 : closest_sick->idx + 1);
         }
     }
 
@@ -120,10 +100,6 @@ int main() {
     cin.tie(nullptr);
     cout.tie(nullptr);
     ios::sync_with_stdio(false);
-
-    // Случилось страшное, в древнем великом дереве вершины начали заболевать.
-    // Вы пока не понимаете причину болезни, пытаетесь разобраться,
-    // для этого нужно уметь быстро узнавать ближайшую к 𝑖 в направлении корня больную вершину.
 
     int t;
     cin >> t;

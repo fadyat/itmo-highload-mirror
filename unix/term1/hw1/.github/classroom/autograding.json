@@ -1,0 +1,60 @@
+{
+  "tests": [
+    {
+      "name": "assist.sh",
+      "setup": "",
+      "run": "cd test ; pytest test_assist.py",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 3
+    },
+    {
+      "name": "calc.sh",
+      "setup": "",
+      "run": "cd test ; pytest test_calc.py",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "mirror.sh",
+      "setup": "",
+      "run": "cd test ; pytest test_mirror.py",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "trim.sh",
+      "setup": "",
+      "run": "cd test ; pytest test_trim.py::test_stdin",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "trim.sh (bonus)",
+      "setup": "",
+      "run": "cd test ; pytest test_trim.py::test_file",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "homeless.sh",
+      "setup": "",
+      "run": "cd test ; pytest test_homeless.py::test_simple",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    },
+    {
+      "name": "homeless.sh (bonus)",
+      "setup": "",
+      "run": "cd test ; pytest test_homeless.py::test_sorted",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 0.5
+    }
+  ]
+}
