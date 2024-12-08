@@ -1,0 +1,160 @@
+
+
+= Control II
+
+Math equations
+
+:icons: font
+:lecture: Control02
+:table-caption!:
+:example-caption!:
+:source-highlighter: highlightjs
+:customcss: https://rawcdn.githack.com/fedochet/asciidoc-revealjs-online-converter/7012d6dd12132363bbec8ba4800272ceb6d0a3e6/asciidoc_revealjs_custom_style.css
+:revealjs_theme: white
+:highlightjs-theme: https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@8.2/build/styles/tomorrow.min.css
+:stylesheet: main.css
+
+ifdef::backend-revealjs[=== !]
+
+* Используйте смоук-тесты (`src/test_task_*.cpp`) для локального тестирования
+* Не забывайте о санитайзерах. Флажки в CMakeLists.txt уже включены, если собираетесь как-то по-другому:
+
+[source,bash]
+----
+-O1 -g -fsanitize=address -fno-omit-frame-pointer
+----
+
+* при решении можно пользоваться
+** классами, которые явно упомянуты в сниппетах в презентации
+** STL: `std::vector`, `std::unordered_map`, ...
+
+== О чем вспомнить
+
+- проблемы с памятью: memleaks, double free, use after free
+- наследование, полиморфизм, виртуальные методы
+
+== Как пользоваться локальными тестами
+
+* В CMakeLists.txt есть четыре таргета, для каждой из подзадач: task_1, task_1_5, task_2 и task_3
+* можете комментировать те таргеты, которые у вас пока не готовы
+
+== Задание: калькулятор
+
+Реализуйте классы для вычисления простых арифметических выражений
+
+ifdef::backend-revealjs[=== !]
+
+[source,cpp]
+----
+
+Expression* main_expr = new Mul(
+    new Add(new Val(10), new Var("y")),
+    new Var("x")
+); // expression (10 + y) * x, presented with our classes
+
+Context ctx;
+ctx.setVar("x", 3);
+ctx.setVar("y", 2);
+
+main_expr->print(cout); // prints "(10 + y) * x"
+cout << main_expr->eval(ctx) << endl; // prints 60
+
+delete main_expr; // *all* memory is cleared
+----
+
+=== Напоминание
+
+* Исключения:
+
+[source,cpp]
+----
+#include <stdexcept>
+
+// при возникновении ошибочных ситуаций
+// нужно бросать runtime_error
+// с описанием ошибки
+throw std::runtime_error("<Сообщение о проблеме>");
+----
+
+=== Задача 1 (0.5 балла)
+
+Реализуйте класс `Expression` - узел дерева вычисления
+
+И три его наследника: `Val`, `Add` и `Mul`
+
+Класс `Expression` имеет виртуальный метод `print`, который позволяет распечатать его в переданный выходной поток
+
+У всех наследников нужно объявить (без определения!) class-member operator new/delete (понадобятся позднее)
+
+ifdef::backend-revealjs[=== !]
+
+* `Val` обозначает число, должен иметь конструктор от переменной типа `int64_t`
+
+* `Add` обозначает сложение двух выражений
+** нужен конструктор, принимающий два `Expression*`
+** эти аргументы забираются "во владение" новым объектом
+** в методе `print` надо обернуть выражение суммы в скобки
+
+* `Mul` — то же, что и `Add`, но для умножения, *НО* скобки в `print` вокруг умножения *не нужны*
+
+=== Задача 1.5 (0.5 балла)
+
+Добавьте в класс Expression виртуальный метод `eval`, не принимающий аргументов и вычисляющий значение выражения
+
+Реализуйте его в наследниках так, чтобы вычисления выполнялись корректно.
+
+=== Задача 2 (1 балл)
+Реализуйте класс `Var` — переменную
+
+Он должен быть наследником `Expression` и иметь конструктор от `std::string` (имя переменной)
+
+ifdef::backend-revealjs[=== !]
+
+Добавьте класс `Context`, предназначенный для хранения значений именованных переменных
+
+Этот класс должен иметь методы для выставления и получения значения переменных, а также для проверки, выставлено ли оно
+
+Добавьте в `Expression` виртуальный метод `eval`, принимающий `Context` и считающий значение выражения с учетом значений переменных в контексте
+
+ifdef::backend-revealjs[=== !]
+
+[source,cpp]
+----
+
+class Context {
+public:
+    // бросает исключение, если переменной нет
+    int64_t getVar(std::string const& name) const;
+
+    // перезаписывает переменную, если она уже есть
+    void setVar(std::string const& name, int64_t value);
+
+    // проверяет, выставлено ли значение переменной в контексте
+    bool varIsSet(std::string const& name) const;
+};
+----
+
+=== Задача 3 (1 балл)
+Добавьте в Expression метод `simplified`, принимающий контекст и возвращающий новый Expression:
+
+* он является упрощенным вариантом исходного выражения (с учётом переданного контекста)
+* достаточно упростить *все* операции/цепочки над `Val` 'ами в итоговой подстановке
+* преобразование необходимо делать *эффективно*, за линейную доп память и время
+
+=== Примеры:
+
+----
+(1 + 2 * x).simplified({x = 2}) => 5
+(1 + 2 * x).simplified({}) => 1 + 2 * x
+(x + 2 * y).simplified({x = 2, y = 5}) => 12
+(x * 2 + y * 3).simplified({x = 3}) => 6 + y * 3
+(x * 2 + y * x).simplified({y = -5}) => x * 2 - 5 * x
+(x * 2 + y * 3).simplified({x = 3, y = -5}) => -9
+----
+
+=== Важные детали
+
+* `simplified` должен возвращать *новый, независимый объект*
+* `0 * x` не упрощается до `0`, если переменная `x` отсутствует в контексте
+* часть тестов работает с class member operator new/delete — для подсчета вызванных методов
+** реализации лежат в `custom_new_delete.cpp`, можно посмотреть на использование в тестах
