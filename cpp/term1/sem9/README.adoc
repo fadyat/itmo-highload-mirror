@@ -1,0 +1,231 @@
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/4kvI3ZCD)
+
+
+= Семинар IX
+:icons: font
+:table-caption!:
+:example-caption!:
+:source-highlighter: highlightjs
+:revealjs_hash: true
+:customcss: https://rawcdn.githack.com/fedochet/asciidoc-revealjs-online-converter/7012d6dd12132363bbec8ba4800272ceb6d0a3e6/asciidoc_revealjs_custom_style.css
+:revealjs_theme: white
+:highlightjs-theme: https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@8.2/build/styles/tomorrow.min.css
+:stylesheet: main.css
+:toc:
+:toclevels: 4
+
+== expressions: types + value categories
+
+* cppref: https://en.cppreference.com/w/cpp/language/expressions[expressions]
+* Диаграмма категорий значений: link:https://miro.medium.com/max/800/1*G9HLBwBJFho9TNzE0J9__w.png[тык]
+
+=== simple examples
+
+* разберемся с простыми локальными переменными в выржениях
+** какой тип
+** какая категория значений
+* https://godbolt.org/z/4zqcqrTK5[godbolt]
+
+== rvalue
+
+=== rvalue refs in method args
+
+```c++
+/* std::string — methods:
+   *  string(const string&);
+     vs
+      string(string&&);
+
+   *   operator=(const string&);
+     vs
+       operator=(string&&);
+   * ...
+*/
+
+String::String(String&& other) {
+    // no long copying, fast switch
+    std::swap(data_, other.data_);
+    std::swap(size_, other.size_);
+    // some trivial data in `other`
+}
+```
+
+=== expressions + categories
+
+Какая категория значения у каждого из этих выражений?
+
+```c++
+String makeStr();
+
+void bar() {
+    String s;
+
+    s;             // ?
+    makeStr();     // ?
+    std::move(s);  // ?
+    String{};      // ?
+}
+```
+
+ifdef::backend-revealjs[=== !]
+
+```c++
+String makeStr();
+
+void bar() {
+    String s;
+
+    s;             // lvalue
+    makeStr();     // prvalue
+    std::move(s);  // xvalue
+    String{};      // prvalue
+}
+```
+
+=== binding to refs
+
+* два типа ссылок: & и &&
+* какие ссылки можно применить в каких случаях?
+
+```c++
+String makeStr();
+
+void bar() {
+    String s;
+
+    String /* ? */ c1 = s;
+    String /* ? */ c2 = makeStr();
+    String /* ? */ c3 = std::move(s);
+}
+```
+
+ifdef::backend-revealjs[=== !]
+
+```c++
+String makeStr();
+
+void bar() {
+    String s;
+
+    String &  c1 = s;
+    String && c2 = makeStr();
+    String && c3 = std::move(s);
+}
+```
+
+=== category of rvalue ref
+
+```c++
+String makeStr();
+
+void bar() {
+    String && s = makeStr();
+    // category of `s`?
+}
+```
+
+ifdef::backend-revealjs[=== !]
+
+```c++
+String makeStr();
+void foo(String&&);
+
+void bar() {
+    String && s = makeStr();
+    // lvalue! adressable:
+    &s;
+
+    // could be bind to lvalue ref:
+    String &s1 = s;
+
+    // passing as rvalue ref — move it:
+    foo(std::move(s));
+
+    // same as
+    foo(makeStr());
+}
+```
+
+=== examples
+
+Давайте поразбираемся с типами выражений в конкретном сниппете кода (в декларациях нас будут интересовать части "справа"):
+
+ifdef::backend-revealjs[=== !]
+
+```c++
+std::string makeStr();
+
+std::string foo() {
+    std::string funcS = makeStr();
+
+    std::string result = std::move(s);
+
+    std::string funcSubStr{std::string_view{funcS}.substr(2)};
+
+    result += funcS + funcSubStr;
+
+    result += "bar";
+
+    return result;
+}
+```
+
+ifdef::backend-revealjs[=== !]
+
+```c++
+std::string makeStr();
+
+std::string foo() {
+    // return by value => prvalue
+    std::string funcS = makeStr();
+
+    // std::move(...) — xvalue
+    std::string result = std::move(s);
+
+    // составные части:
+    // std::string_view{funcS} — prvalue, переходит в xvalue (т.к. дальше дергается метод)
+    // 2 - prvalue
+    // выражение целиком (самый внешний функтор):
+    // .substr(...) — prvalue (возвращает самостоятельный std::string)
+    std::string funcSubStr{std::string_view{funcS}.substr(2)};
+
+    // operator+(s1, s2) — prvalue
+    // operator+=(this, s2) — lvalue (все выражение)
+    result += funcS + funcSubStr;
+
+    // c-string literals — lvalue (адресуемые: обычно в read-only данных)
+    result += "bar";
+
+    return result;
+}
+```
+
+
+=== rvalue refs in methods
+
+* `String(String&&)` — move constructor
+* `operator=(String&&)` — move assignment
+* `void foo() && { /* ... */ }` — _попишем string_builder_, https://godbolt.org/z/sMjnGGxnx[godbolt]
+
+== Задача
+
+Весь код должен жить в пространстве имён cls09
+
+=== Queue [2 балла]
+
+Реализовать шаблонный односвязный список и реализовать поверх него FIFO-очередь
+
+ifdef::backend-revealjs[=== !]
+
+Необходимый интерфейс очереди:
+
+* Конструктор, конструктор копирования, оператор=, деструктор
+* Мув-конструктор + оператор присваивания
+* Вставка в конец очереди push(const T&), push(T&&)
+* Удаление первого элемента void pop()
+* Доступ к первому элементу `T& front, const T& front`
+* Размер очереди `size_t size()`
+
+=== Queue::iterator [1 балл]
+
+добавьте в класс очереди поддержку итераторов (const и простой)

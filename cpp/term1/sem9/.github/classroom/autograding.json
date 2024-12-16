@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "smoke_task_1",
+      "setup": "",
+      "run": "cmake . && make task-1-test && ./task-1-test",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 2
+    },
+    {
+      "name": "smoke_task_1_iterators",
+      "setup": "",
+      "run": "cmake . && make task-1-test-iterators && ./task-1-test-iterators",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": 1
+    }
+  ]
+}
