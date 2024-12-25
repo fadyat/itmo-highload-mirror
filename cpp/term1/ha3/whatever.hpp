@@ -7,12 +7,12 @@
 namespace utils {
 
 class bad_whatever_cast : public std::bad_cast {
-  public:
+   public:
     const char *what() const noexcept override { return "bad whatever cast"; }
 };
 
 class whatever {
-  private:
+   private:
     struct placeholder {
         virtual ~placeholder() = default;
         virtual const std::type_info &type() const = 0;
@@ -30,11 +30,11 @@ class whatever {
 
     std::unique_ptr<placeholder> ptr;
 
-  public:
+   public:
     whatever() : ptr(nullptr) {}
 
     template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, whatever>>>
-    whatever(T &&value) : ptr(std::make_unique<holder<std::decay_t<T>>>(std::move(value))) {}
+    whatever(T &&value) : ptr(std::make_unique<holder<std::decay_t<T>>>(std::forward<T>(value))) {}
 
     whatever(const whatever &other) : ptr(other.empty() ? nullptr : other.ptr->clone()) {}
 
@@ -55,7 +55,7 @@ class whatever {
     }
 
     friend void swap(whatever &a, whatever &b) { std::swap(a.ptr, b.ptr); }
-    bool empty() const { return ptr == nullptr; }
+    bool empty() const { return !ptr; }
     void clear() { ptr.reset(); }
 
     template <typename T>
@@ -72,7 +72,7 @@ class whatever {
 };
 
 template <typename T>
-T *whatever_cast(whatever *w) {
+inline T *whatever_cast(whatever *w) {
     if (w == nullptr || w->empty() || w->ptr->type() != typeid(T)) {
         return nullptr;
     }
@@ -81,18 +81,18 @@ T *whatever_cast(whatever *w) {
 }
 
 template <typename T>
-T whatever_cast(whatever &w) {
+inline T whatever_cast(whatever &w) {
     auto ptr = whatever_cast<std::remove_reference_t<T>>(&w);
     return ptr ? *ptr : throw bad_whatever_cast();
 }
 
 template <typename T>
-const T *whatever_cast(const whatever *w) {
+inline const T *whatever_cast(const whatever *w) {
     return whatever_cast<T>(const_cast<whatever *>(w));
 }
 
 template <typename T>
-T whatever_cast(const whatever &w) {
+inline T whatever_cast(const whatever &w) {
     return whatever_cast<const std::remove_reference_t<T> &>(const_cast<whatever &>(w));
 }
 

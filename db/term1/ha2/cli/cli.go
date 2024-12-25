@@ -45,8 +45,8 @@ func ParseArgs(args []string) (*Args, error) {
 	return &Args{
 		LFilePath:  args[0],
 		RFilePath:  args[2],
-		LField:     uint(lfield),
-		RField:     uint(rfield),
+		LField:     uint(lfield - 1),
+		RField:     uint(rfield - 1),
 		JoinType:   joinType,
 		OutputFile: outputFile,
 	}, nil

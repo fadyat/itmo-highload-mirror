@@ -1,0 +1,44 @@
+{
+  "tests": [
+    {
+      "name": "test_memory_check",
+      "setup": "",
+      "run": "cmake . && make test_memory_check && ./test_memory_check",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": null
+    },
+    {
+      "name": "test_smoke_task_1",
+      "setup": "",
+      "run": "cmake . && make test_smoke_task_1 && ./test_smoke_task_1",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": null
+    },
+    {
+      "name": "test_smoke_task_2",
+      "setup": "",
+      "run": "cmake . && make test_smoke_task_2 && ./test_smoke_task_2",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": null
+    },
+    {
+      "name": "test_smoke_task_3",
+      "setup": "",
+      "run": "cmake . && make test_smoke_task_3 && ./test_smoke_task_3",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 1,
+      "points": null
+    }
+  ]
+}

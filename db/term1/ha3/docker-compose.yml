@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  # mongosh -u admin -p admin --authenticationDatabase admin --host localhost --port 27017
+  mongo:
+    image: ${MONGO_IMAGE:-mongo:5.0}
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: test
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - mongodb:/data/db
+      - mongoconfig:/data/configdb
+
+volumes:
+  mongodb:
+  mongoconfig:

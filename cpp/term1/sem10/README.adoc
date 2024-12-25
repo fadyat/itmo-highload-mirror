@@ -1,0 +1,297 @@
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/IyfPrdH1)
+= Семинар X
+:icons: font
+:table-caption!:
+:example-caption!:
+:source-highlighter: highlightjs
+:revealjs_hash: true
+:customcss: https://rawcdn.githack.com/fedochet/asciidoc-revealjs-online-converter/7012d6dd12132363bbec8ba4800272ceb6d0a3e6/asciidoc_revealjs_custom_style.css
+:revealjs_theme: blood
+:stylesheet: main.css
+:toc:
+:toclevels: 4
+
+== recap
+
+* два "приемника" значений: для lvalue и для rvalue
+** => разная логика использования аргумента
+
+```c++
+// deep copying
+vector& vector::operator=(const vector&);
+// fast switching
+vector& vector::operator=(vector&&);
+
+vector makeVector();
+
+void usage() {
+    vector v1, v2 /* ... */;
+    v1 = v2;
+    v1 = makeVector();
+}
+```
+
+== std::move usage
+
+* какую задачу решает?
+** _поговорим с картинкой про категории значений_
+
+```c++
+// способ явного "взятия" данных из lvalue
+v1 = std::move(v2);
+
+// избыточно, но окэй
+// (компилятору, не пишите так)
+v1 = std::move(makeVector());
+```
+
+ifdef::backend-revealjs[=== !]
+
+* используем явный тип?
+** `std::move(value)` vs `std::move<T>(value)`
+* обсудим возможную реализацию:
+** _смотрим решение с лекции_
+** обязательна ли универсальная ссылка?
+
+
+== std::forward usage
+
+* какую задачу решает?
+** _поговорим с картинкой про категории значений_
+* используем явный тип?
+** `std::forward(value)` vs `std::forward<T>(value)`
+* почему реализация такая? _посложнее предыдущего_
+** _смотрим решение с лекции_
+
+=== motivation
+
+* бывает функция-"передатчик" данных до "приемников"
+** принимает _какой-то_ аргумент (мб >1) из перегрузок приемников
+** и передает, не меняя значение
+* возникает дублирование кода:
+
+```c++
+void passingArgsToMethodFunction(const vector& v) {
+    // ...
+    vector tmp{v};  // приемник
+    // ...
+}
+
+void passingArgsFunction(vector&& v) {
+    // ...
+    vector tmp{std::move(v)};    // приемник
+    // ...
+}
+```
+
+=== solution: unversal ref + forwarding arg(s)
+```c++
+template <typename T>
+void passingArgsToMethodFunction(T&& v) {
+    // ...
+    vector tmp{std::forward<T>(v)};
+    // ...
+}
+```
+
+=== forwarding through multiple functions
+
+```c++
+template <typename T>
+void passingArgsToMethodFunction(T&& v) {
+    // ...
+    vector tmp{std::forward<T>(v)};
+    // ...
+}
+
+template <typename T>
+void anotherPassingArgsFunction(T&& v) {
+    // ...
+    passingArgsToMethodFunction(std::forward<T>(v));
+}
+```
+
+== stl examples
+
+=== unique_ptr
+
+* `std::unique_ptr<T>` — обертка над `T*` (умный указатель)
+** RAII: объект владеющий, память автоочищается в деструкторе
+** (*) при выбросе исключения память освободится (за счет stack unwinding)
+* _заиспользуем класс в `Mul::Simplified`:_ https://godbolt.org/z/xqW7TvhWf[godbolt]
+* movable, не copyable
+
+==== https://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique[make_unique]
+
+* создает объект `T` из `args..` в дин памяти
+* чем-то лучше, чем `new T{/* args ... */}`?
+** _пример: unique_ptr в аргументах_
+
+=== https://en.cppreference.com/w/cpp/container/vector/emplace_back[vector::emplace_back]
+
+* принимает аргументы для *создания* объекта
+** передача идеальная — perfect forwarding
+* конструирует T на дин блоке внутри вектора
+** => без лишних копирований T
+* [*] использует variadic templates
+
+=== shared_ptr
+
+* `std::shared_ptr<T>` — хранит память `T*` с подсчетом количества пользователей
+* использует неявный счетчик ссылок (contol_block, хранится в дин памяти)
+** _SharedBuffer из дорешки использует эту же идею_
+
+==== https://en.cppreference.com/w/cpp/memory/shared_ptr/make_shared[make_shared]
+** принимает аргументы для *создания* `T`
+** 1 аллокация памяти: и для T, и для контрольного блока
+** создание T + корректные счетчики
+
+==== weak_ptr
+
+* цель: решать проблему циклических ссылок из shared_ptr
+** _порисуем картинку_
+* идея:
+** одну из связей делаем weak (weak_ptr вместо shared_ptr)
+** когда надо использовать данные: `weak_ptr<T>::lock()` — возвращает `shared_ptr<T>` (_временный_)
+
+
+== std::decay_t
+
+* https://godbolt.org/z/Gjscq6rPE[godbolt code]
+* universal ref: выводимый тип `T` может быть очень разным (const, &, ...)
+* https://en.cppreference.com/w/cpp/types/decay[std::decay] отбрасывает внешний ref + следующий cv-модификатор
+** _и обрабатывает еще несколько случаев_
+
+=== make_pair example [*]
+
+* https://en.cppreference.com/w/cpp/utility/pair/make_pair[make_pair]
+
+== классы-хелперы в тестах
+
+* как проверять количество вызовов спец методов?
+* => как проверить, что передача в коде — идеальная?
+
+=== delete methods
+
+* можно использовать класс, в котором методов нет
+```c++
+struct NonCopyable {
+    NonCopyable();
+
+    NonCopyable(NonCopyable&) = delete;
+    NonCopyable& operator=(NonCopyable&) = delete;
+
+    NonCopyable(NonCopyable&&) = default;
+}
+
+void test_perfect_forwarding() {
+    myUniquePtr<NonCopyable> p = makeMyUnique(NonCopyable());
+}
+```
+
+=== count method calls
+
+* можно использовать класс, который считает каждый вызов нужного метода
+```c++
+struct Countable {
+    static inline size_t c1 = 0;
+    static inline size_t c2 = 0;
+
+    Countable(Countable&) { ++c1; }
+    Countable& operator=(Countable&) { ++c2; }
+}
+
+void test_perfect_forwarding() {
+    myUniquePtr<NonCopyable> p = makeMyUnique(NonCopyable());
+    assert(Countable::c1 == 0);
+    assert(Countable::c2 == 0);
+}
+```
+
+=== count calls example
+```c++
+template <typename>
+struct MethodCounters {
+    static inline size_t DefaultConstructed = 0;
+    // ...
+}
+
+template <typename>
+struct Countable {
+    using Counters = MethodCounters<Countable>;
+
+    Countable() { ++Counters::DefaultConstructed; }
+    // ...
+}
+
+// some macro for fast instantiation + class definition
+```
+
+=== result code
+
+* https://cppinsights.io/lnk?code=I2luY2x1ZGUgPGNzdGRpbz4KI2luY2x1ZGUgPGNhc3NlcnQ+Cgp0ZW1wbGF0ZSA8dHlwZW5hbWU+CnN0cnVjdCBNZXRob2RDb3VudGVycyB7CiAgICBzdGF0aWMgaW5saW5lIHNpemVfdCBEZWZhdWx0Q29uc3RydWN0ZWQgPSAwOwogICAgc3RhdGljIGlubGluZSBzaXplX3QgQ29weUNvbnN0cnVjdGVkID0gMDsKICAgIHN0YXRpYyBpbmxpbmUgc2l6ZV90IENvcHlBc3NpZ25lZCA9IDA7CiAgICBzdGF0aWMgaW5saW5lIHNpemVfdCBNb3ZlQ29uc3RydWN0ZWQgPSAwOwogICAgc3RhdGljIGlubGluZSBzaXplX3QgTW92ZUFzc2lnbmVkID0gMDsKICAgIHN0YXRpYyBpbmxpbmUgc2l6ZV90IERlc3Ryb3llZCA9IDA7Cn07Cgp0ZW1wbGF0ZSA8dHlwZW5hbWU+CnN0cnVjdCBDb3VudGFibGUgewogICAgdXNpbmcgQ291bnRlcnMgPSBNZXRob2RDb3VudGVyczxDb3VudGFibGU+OwogICAgQ291bnRhYmxlKCkgeyArK0NvdW50ZXJzOjpEZWZhdWx0Q29uc3RydWN0ZWQ7IH0KICAgIENvdW50YWJsZShDb3VudGFibGUmJikgeyArK0NvdW50ZXJzOjpNb3ZlQ29uc3RydWN0ZWQ7IH0KICAgIENvdW50YWJsZShjb25zdCBDb3VudGFibGUmKSB7ICsrQ291bnRlcnM6OkNvcHlDb25zdHJ1Y3RlZDsgfQogICAgdm9pZCBvcGVyYXRvcj0oQ291bnRhYmxlJiYpIHsgKytDb3VudGVyczo6TW92ZUFzc2lnbmVkOyB9CiAgICB2b2lkIG9wZXJhdG9yPShjb25zdCBDb3VudGFibGUmKSB7ICsrQ291bnRlcnM6OkNvcHlBc3NpZ25lZDsgfQogICAgfkNvdW50YWJsZSgpIHsgKytDb3VudGVyczo6RGVzdHJveWVkOyB9Cn07CgojZGVmaW5lIERlZmluZUNvdW50ZWRDbGFzcyhDbGFzc05hbWUpIFwKICAgIHN0cnVjdCB0YWdfIyNDbGFzc05hbWUge307ICAgICAgICBcCiAgICB1c2luZyBDbGFzc05hbWUgPSBDb3VudGFibGU8dGFnXyMjQ2xhc3NOYW1lPgoKCkRlZmluZUNvdW50ZWRDbGFzcyhTb21lQ2xhc3MpOwoKCmludCBtYWluKCkKewogIFNvbWVDbGFzcyBvYmo7CiAgYXNzZXJ0KFNvbWVDbGFzczo6Q291bnRlcnM6OkRlZmF1bHRDb25zdHJ1Y3RlZCA9PSAxKTsKfQ==&insightsOptions=cpp17&std=cpp17&rev=1.0[cppinsights.io]
+* _будет встречаться в тестах_
+
+== Задачки
+
+Весь код должен жить в пространстве имён `cls10`
+
+=== unique_ptr
+
+Реализуйте класс unique_ptr, руководствуясь тестами
+
+ifdef::backend-revealjs[=== !]
+
+* шаблонный аргумент - тип хранимого значения
+* нельзя копировать, но можно перемещать
+* необходимый набор методов для умного указателя
+* метод make_unique с 0..2 параметрами
+- Должен поддерживаться perfect-forwarding
+
+=== shared_ptr
+
+Реализуйте класс shared_ptr, руководствуясь тестами
+
+ifdef::backend-revealjs[=== !]
+
+* RAII, реализует логику подсчета ссылок
+* необходимый набор методов для умного указателя
+* метод make_shared с 0..2 параметрами
+** рамещение control_block+T вместе не требуется, но можете сделать
+
+=== shared_ptr with incomplete type [*][0.5 балла]
+
+Доработайте класс shared_ptr для поддержки случая неполного типа — см код теста
+
+Подсказки:
+
+* часть методов в шаблоне класса надо сделать "опциональными"
+* часть методов должна работать по-разному в зависимости от типа
+* это приемы метапрограммирования — условная компиляция, выбор перегрузок, https://en.cppreference.com/w/cpp/language/sfinae[SFINAE]
+
+ifdef::backend-revealjs[=== !]
+
+Понадобится что-то из:
+
+* шаблонные функции/методы и их перегрузки (см. https://en.cppreference.com/w/cpp/language/sfinae[SFINAE]) (база)
+* https://en.cppreference.com/w/cpp/types/enable_if[std::enable_if] (c++11)
+* https://en.cppreference.com/w/cpp/language/if#Constexpr_if[if constexpr] (c++17)
+* https://en.cppreference.com/w/cpp/language/constraints#Requires_clauses[requires clause] (c++20)
+
+=== weak_ptr
+
+Реализуйте класс weak_ptr и доработайте shared_ptr, руководствуясь тестами
+
+ifdef::backend-revealjs[=== !]
+
+```c++
+// очищает хранимый указатель (присваивает в него nullptr)
+void reset();
+
+// возвращает true, если объект уже удалён
+bool expired() const;
+
+// возвращает сильный указатель, если он ещё не был удален
+// иначе пустой shared_ptr
+shared_ptr<T> lock() const;
+```
