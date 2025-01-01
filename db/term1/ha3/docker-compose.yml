@@ -3,7 +3,7 @@ version: '3.9'
 services:
   # mongosh -u admin -p admin --authenticationDatabase admin --host localhost --port 27017
   mongo:
-    image: ${MONGO_IMAGE:-mongo:5.0}
+    image: ${MONGO_IMAGE:-mongo:6.0}
     ports:
       - "27017:27017"
     environment:
