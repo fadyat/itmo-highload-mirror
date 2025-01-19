@@ -54,7 +54,7 @@ func newSetupArguments(url, database, collection, drange string) (*setupArgs, er
 }
 
 var setupCmd = &cobra.Command{
-	Use:   "setup",
+	Use:   "1_setup",
 	Short: "Downloads required data and stores it in the database",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		args, err := newSetupArguments(
@@ -83,17 +83,34 @@ var setupCmd = &cobra.Command{
 		}
 
 		slog.Debug("prepared collection for storing data")
-		return initFunc(cmd.Context(), collection, args)
+		if err := initFunc(cmd.Context(), collection, args); err != nil {
+			return err
+		}
+
+		slog.Info("Data has been successfully downloaded and stored")
+		return nil
 	},
 	SilenceErrors: true,
 }
 
-func init() {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
+func registerDefaultFlags(cmd *cobra.Command) {
+	cmd.Flags().StringP("url", "u", "mongodb://admin:admin@localhost:27017", "MongoDB server URL")
+	cmd.Flags().StringP("database", "d", "test", "Input database name")
+	cmd.Flags().StringP("collection", "c", "test", "Input collection name")
+}
 
-	setupCmd.Flags().StringP("url", "u", "mongodb://admin:admin@localhost:27017", "MongoDB server URL")
-	setupCmd.Flags().StringP("database", "d", "test", "Database name")
-	setupCmd.Flags().StringP("collection", "c", "test", "Collection name")
+func newCoreArgsFromCmd(cmd *cobra.Command) coreArgs {
+	return coreArgs{
+		url:        cmd.Flag("url").Value.String(),
+		database:   cmd.Flag("database").Value.String(),
+		collection: cmd.Flag("collection").Value.String(),
+	}
+}
+
+func init() {
+	slog.SetLogLoggerLevel(slog.LevelInfo)
+
+	registerDefaultFlags(setupCmd)
 	setupCmd.Flags().StringP("range", "r", "2015-01-01:2015-01-01", "Date range")
 
 	rootCmd.AddCommand(setupCmd)
