@@ -1,0 +1,6 @@
+/smoke_test
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+Makefile
+.vscode

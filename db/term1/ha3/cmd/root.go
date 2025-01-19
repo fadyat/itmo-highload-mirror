@@ -3,11 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/spf13/cobra"
 	"log/slog"
 	"os"
 	"os/exec"
-
-	"github.com/spf13/cobra"
 )
 
 type coreArgs struct {
@@ -20,7 +19,6 @@ type mongoShellArgs struct {
 	coreArgs
 
 	filename string
-	eval     string
 }
 
 var rootCmd = &cobra.Command{
@@ -42,7 +40,7 @@ func Execute() {
 func runMongoShell(ctx context.Context, args *mongoShellArgs) error {
 	cmdArgs := []string{
 		args.url,
-		"--eval", fmt.Sprintf("db = db.getSiblingDB('%s'); collection = db.getCollection('%s'); %s", args.database, args.collection, args.eval),
+		"--eval", fmt.Sprintf("db = db.getSiblingDB('%s'); collection = db.getCollection('%s');", args.database, args.collection),
 		"--file", args.filename,
 	}
 

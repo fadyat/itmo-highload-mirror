@@ -1,0 +1,25 @@
+name: tests
+on: push
+jobs:
+  run:
+    strategy:
+      # Run all tests even if any of them fails early.
+      fail-fast: false
+      matrix:
+        define: [SET_BASIC,SET_DEEP_COPY,SET_MOVES,SET_WITH_COMPARATOR,SET_ITERATION,SET_ERASE]
+    #runs-on: ubuntu-latest
+    runs-on: self-hosted
+    #container: rutsky/cpp-test@sha256:0a0fde45421054d4dc05aae18c6bee5a7073135b0a1d93f09c89e477019e49b7
+    container: rutsky/cpp-test:21
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          c++ \
+            -std=c++20 \
+            -Wall -Wextra -Werror -Wextra-semi -Wno-self-assign-overloaded -fno-operator-names \
+            -O1 -g -fsanitize=address -fno-omit-frame-pointer \
+            -o /tmp/out \
+            -D${{ matrix.define }} \
+            smoke_test.cpp && \
+          /tmp/out
