@@ -1,0 +1,66 @@
+variables:
+  GIT_DEPTH: 10
+  GIT_STRATEGY: clone
+  GIT_SUBMODULE_STRATEGY: normal
+  DOCKER_REGISTRY: gitlab.manytask.org:5050/computer-networks/public-2025-spring
+
+.docker:
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - echo "${DOCKER_REGISTRY_DEPLOY_PASSWORD}" | docker login $CI_REGISTRY -u $DOCKER_REGISTRY_DEPLOY_USER --password-stdin
+
+.releaser-ci-rules:
+  rules:
+    # never run in public repo
+    - if: $CI_PROJECT_NAME =~ /^public-(fall|spring)-20\d\d/
+      when: never
+    # never run on submit branches
+    - if: $CI_COMMIT_BRANCH =~ /submit/
+      when: never
+
+stages:
+  - lint
+  - test
+  - deploy
+
+include: '.grade-containerlab.yml'
+
+# Lint code in the repository stage
+lint:
+  stage: lint
+  image: gitlab.manytask.org:5050/computer-networks/public-2025-spring/testenv:latest
+  tags:
+    - computer-networks-infra
+  rules:
+    # run only on private repo and not submit branches
+    - if: $CI_PROJECT_NAME =~ /computer-networks/ && $CI_COMMIT_BRANCH !~ /submit/
+      when: always
+    - when: never
+  script:
+    - source /workdir/venv/bin/activate
+    - export PYTHONPATH="${CI_PROJECT_DIR}"
+    - ./lint.sh
+
+# Upload docker images to the registry
+upload-docker-images:
+  stage: deploy
+  tags:
+    - computer-networks-infra
+  extends:
+    - .docker
+    - .releaser-ci-rules
+  rules:
+    # run only on main branch in private repo
+    - if: $CI_PROJECT_NAME =~ /computer-networks/ && $CI_COMMIT_BRANCH =~ /main/
+      when: manual
+    - when: never
+  script:
+    - export PYTHONPATH="${CI_PROJECT_DIR}"
+    # Install python3, we may push it to the docker image, but here is chicken and egg problem.
+    # This is ci to build docker images, who will build image for ci?
+    - apk add python3
+    # Actually build and push images
+    - cd test_infra/dockerfiles && python3 build.py --registry ${DOCKER_REGISTRY} --tag latest
+  timeout: 10 minutes

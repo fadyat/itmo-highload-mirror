@@ -1,0 +1,24 @@
+grade-containerlab:
+  stage: test
+  tags:
+    - computer-networks
+  rules:
+    # never run in public repo
+    - if: $CI_PROJECT_NAME =~ /^public-(fall|spring)-20\d\d/
+      when: never
+    # never run on contributing branches
+    - if: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /contributing/ || $CI_COMMIT_BRANCH =~ /contributing/
+      when: never
+    # never run on main branches
+    - if: $CI_COMMIT_BRANCH =~ /main/
+      when: never
+    # otherwise run on containerlabs submision branch only
+    - if: $CI_COMMIT_BRANCH =~ /static_routing|static_routing_backup_link|isis|bgp|bmp/
+      when: always
+    - when: never
+  script:
+    # As all scripts use absolute imports,
+    # PYTHONPATH should point to the root of the repository
+    - export PYTHONPATH="${CI_PROJECT_DIR}"
+    - python3 test_infra/grader/__main__.py
+  timeout: 10 minutes

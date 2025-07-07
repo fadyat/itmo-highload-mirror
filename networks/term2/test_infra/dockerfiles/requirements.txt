@@ -1,0 +1,10 @@
+docker>=7.0.0
+pyyaml
+types-PyYAML
+pytest
+mypy
+black
+types-docker
+types-PyYAML
+types-requests
+typing_extensions

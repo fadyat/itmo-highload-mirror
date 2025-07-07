@@ -1,0 +1,33 @@
+name: bmp
+
+mgmt:
+  network: colab-net
+  ipv4-subnet: 10.20.30.0/24
+
+topology:
+  nodes:
+    speaker:
+      kind: linux
+      network-mode: none
+      image: &image gitlab.manytask.org:5050/computer-networks/public-2025-spring/frrenv:latest
+    neighbour1:
+      kind: linux
+      network-mode: none
+      image: *image
+    neighbour2:
+      kind: linux
+      network-mode: none
+      image: *image
+    neighbour3:
+      kind: linux
+      network-mode: none
+      image: *image
+    monitoring-client:
+      kind: linux
+      network-mode: none
+      image: *image
+  links:
+    - endpoints: ["monitoring-client:eth1", "speaker:eth4"]
+    - endpoints: ["speaker:eth1", "neighbour1:eth1"]
+    - endpoints: ["speaker:eth2", "neighbour2:eth1"]
+    - endpoints: ["speaker:eth3", "neighbour3:eth1"]

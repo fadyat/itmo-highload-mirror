@@ -1,0 +1,17 @@
+FROM quay.io/frrouting/frr:10.3.0
+
+# Enable FRR daemons requered in tasks.
+COPY daemons /etc/frr/daemons
+
+RUN apk add --update \
+      python3 py-pip git
+
+WORKDIR /workdir
+COPY requirements.txt .
+
+SHELL ["/bin/bash", "-c"]
+
+# Create virtual environment with required packages.
+RUN python3 -m venv venv && \
+      source ./venv/bin/activate  && \
+      pip install --no-cache-dir -r requirements.txt  

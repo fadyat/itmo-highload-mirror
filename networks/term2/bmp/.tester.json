@@ -1,0 +1,5 @@
+{
+  "allow_change": [
+      "bmp_client.py"
+  ]
+}

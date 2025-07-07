@@ -1,0 +1,51 @@
+name: bgp
+
+mgmt:
+  network: colab-net
+  ipv4-subnet: 10.20.30.0/24
+
+topology:
+  nodes:
+    leaf1:
+      kind: linux
+      network-mode: none
+      image: &image gitlab.manytask.org:5050/computer-networks/public-2025-spring/frrenv:latest
+    leaf2:
+      kind: linux
+      network-mode: none
+      image: *image
+    spine1:
+      kind: linux
+      network-mode: none
+      image: *image
+    spine2:
+      kind: linux
+      network-mode: none
+      image: *image
+    spine3:
+      kind: linux
+      image: *image
+      network-mode: none
+    spine4:
+      kind: linux
+      image: *image
+      network-mode: none
+    PC1:
+      kind: linux
+      image: *image
+      network-mode: none
+    PC2:
+      kind: linux
+      image: *image
+      network-mode: none
+  links:
+    - endpoints: ["leaf1:eth1", "spine2:eth1"]
+    - endpoints: ["leaf1:eth2", "spine1:eth2"]
+    - endpoints: ["leaf1:eth4", "spine3:eth2"]
+    - endpoints: ["leaf1:eth5", "spine4:eth1"]
+    - endpoints: ["leaf2:eth2", "spine2:eth2"]
+    - endpoints: ["leaf2:eth1", "spine1:eth1"]
+    - endpoints: ["leaf2:eth4", "spine3:eth1"]
+    - endpoints: ["leaf2:eth5", "spine4:eth2"]
+    - endpoints: ["PC1:eth1", "leaf1:eth3"]
+    - endpoints: ["PC2:eth1", "leaf2:eth3"]

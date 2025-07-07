@@ -1,0 +1,57 @@
+services:
+    client:
+        image: fadyat/vpn_project:0.2.0
+        container_name: wireguard-client
+        cap_add:
+            - NET_ADMIN
+            - SYS_MODULE
+            - NET_RAW
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Etc/UTC
+        volumes:
+            - ./_client_wg.conf:/config/wg_confs/wg0.conf
+            - ./_client_ewg.conf:/config/wg_confs/wg1.conf
+        networks:
+            wg-net:
+                ipv4_address: 172.28.0.2
+        
+    gateway:
+        image: fadyat/vpn_project:0.2.0
+        container_name: wireguard-gateway
+        cap_add:
+            - NET_ADMIN
+            - SYS_MODULE
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Etc/UTC
+        volumes:
+            - ./_gateway.conf:/config/wg0.conf
+        networks:
+            wg-net:
+                ipv4_address: 172.28.0.3
+    
+    extra-gateway:
+        image: fadyat/vpn_project:0.2.0
+        container_name: wireguard-egateway
+        cap_add:
+            - NET_ADMIN
+            - SYS_MODULE
+        environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=Etc/UTC
+        volumes:
+            - ./_egateway.conf:/config/wg0.conf
+        networks:
+            wg-net:
+                ipv4_address: 172.28.0.4
+
+networks:
+    wg-net:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.28.0.0/16

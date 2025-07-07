@@ -1,0 +1,87 @@
+version: 1
+
+
+settings:
+  course_name: networks
+
+  gitlab_base_url: https://gitlab.manytask.org
+  public_repo: computer-networks/public-2025-spring
+  students_group: computer-networks/students-2025-spring
+
+
+ui:
+  task_url_template: https://gitlab.manytask.org/computer-networks/public-2025-spring/-/tree/main/$TASK_NAME
+
+  links:
+    "Contribute Manytask": https://github.com/manytask
+
+
+deadlines:
+  timezone: Europe/Moscow
+
+  deadlines: hard
+
+  schedule:
+    - group: graphs
+      enabled: true
+      start: 2025-02-15 18:00:00
+      steps:
+        0.5: 2025-03-24 23:59:00
+      end: 2025-07-15 23:59:00
+      tasks:
+        - task: graphs
+          score: 80
+    - group: routing
+      enabled: true
+      start: 2025-02-15 18:00:00
+      steps:
+        0.5: 2025-03-24 23:59:00
+      end: 2025-07-15 23:59:00
+      tasks:
+        - task: static_routing
+          score: 100
+        - task: static_routing_backup_link
+          score: 100
+    - group: dynamic_routing
+      enabled: true
+      start: 2025-03-19 18:00:00
+      steps:
+        0.5: 2025-04-16 23:59:00
+      end: 2025-07-15 23:59:00
+      tasks:
+        - task: isis
+          score: 100
+        - task: bgp
+          score: 100
+        - task: bgp_lecture
+          score: 0
+    - group: fabric
+      enabled: true
+      start: 2025-03-19 18:00:00
+      steps:
+        0.5: 2025-04-16 23:59:00
+      end: 2025-07-15 23:59:00
+      tasks:
+        - task: fabric
+          score: 90
+    - group: bmp
+      enabled: true
+      start: 2025-04-22 18:00:00
+      steps:
+        0.5: 2025-05-12 23:59:00
+      end: 2025-07-15 23:59:00
+      tasks:
+        - task: bmp
+          score: 130
+    - group: cryptography
+      enabled: true
+      start: 2025-05-04 18:00:00
+      steps:
+        0.5: 2025-06-15 23:59:00
+      end: 2025-07-15 23:59:00
+      tasks:
+        - task: traffic_analysis
+          score: 100
+        - task: vpn_project
+          score: 100
+

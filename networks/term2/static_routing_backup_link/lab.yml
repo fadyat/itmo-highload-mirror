@@ -1,0 +1,49 @@
+name: static_routing
+
+mgmt:
+  network: colab-net
+  ipv4-subnet: 10.20.30.0/24
+
+mgmt:
+  network: colab-net
+  ipv4-subnet: 10.20.30.0/24
+
+topology:
+  nodes:
+    R1:
+      kind: linux
+      network-mode: none
+      image: &image gitlab.manytask.org:5050/computer-networks/public-2025-spring/testenv:latest
+
+    R2:
+      kind: linux
+      network-mode: none
+      image: *image
+
+    R3:
+      kind: linux
+      network-mode: none
+      image: *image
+
+    PC1:
+     kind: linux
+     network-mode: none
+     image: *image
+
+    PC2:
+     kind: linux
+     network-mode: none
+     image: *image
+
+    PC3:
+     kind: linux
+     network-mode: none
+     image: *image
+
+  links:
+    - endpoints: ["R1:eth1", "R2:eth1"]
+    - endpoints: ["R1:eth2", "R3:eth1"]
+    - endpoints: ["R2:eth2", "R3:eth2"]
+    - endpoints: ["PC1:eth1", "R1:eth3"]
+    - endpoints: ["PC2:eth1", "R2:eth3"]
+    - endpoints: ["PC3:eth1", "R3:eth3"]

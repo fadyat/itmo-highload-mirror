@@ -1,0 +1,15 @@
+FROM ubuntu:22.04
+
+RUN apt-get update -y && apt-get install -y \
+      python3 python3-pip git python3.10-venv \
+      iputils-ping iproute2 traceroute
+
+WORKDIR /workdir
+COPY requirements.txt .
+
+SHELL ["/bin/bash", "-c"]
+
+# Create virtual environment with required packages.
+RUN python3 -m venv venv && \
+      source ./venv/bin/activate  && \
+      pip install --no-cache-dir -r requirements.txt  
