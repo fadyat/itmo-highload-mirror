@@ -9,7 +9,7 @@ if [ ! -d itmo-highload-mirror ]; then
 fi
 
 cd itmo-highload-mirror && git pull
-rsync -av --delete --exclude '.git/' --exclude '.gitmodules' ../itmo-highload/ .
+rsync -av --delete --exclude '.git' --exclude '.gitmodules' ../itmo-highload/ .
 
 case "$(git remote get-url origin)" in
 	*itmo-highload-mirror*) ;;
