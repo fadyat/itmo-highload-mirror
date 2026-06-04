@@ -16,6 +16,11 @@ case "$(git remote get-url origin)" in
 	*) echo "refusing to push: origin is not the mirror ($(git remote get-url origin))" >&2; exit 1 ;;
 esac
 
-git add .
+# flatten submodules: drop gitlink entries so their files commit as plain content
+git ls-files -s | grep '^160000 ' | cut -f2 | while IFS= read -r p; do
+	git rm --cached -q -- "$p"
+done
+
+git add -A
 git commit -m 'feat: synced'
 git push
