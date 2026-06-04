@@ -1,0 +1,18 @@
+flowchart LR
+    Client[Client]
+    Shifter[s3-shifter]
+    Src[(Source<br/>bucket)]
+    Dst[(Target<br/>bucket)]
+    Migrator[service-s3-migrator]
+    Locks[(Consul)]
+    STaaS[service-staas]
+
+    Client -->|S3| Shifter
+    Shifter --> Src
+    Shifter --> Dst
+    Migrator -->|чтение| Src
+    Migrator -->|запись| Dst
+    Migrator -->|блокировки| Locks
+    Shifter -->|блокировки| Locks
+    STaaS -.->|управление| Migrator
+    Shifter -.->|опрос состояния| STaaS

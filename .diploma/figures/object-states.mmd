@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> INIT: обнаружен Lister
+    INIT --> IN_PROGRESS: взят Copier'ом
+    IN_PROGRESS --> INIT: истёк срок аренды
+    IN_PROGRESS --> COPIED: успешно скопирован
+    IN_PROGRESS --> EXIST: уже в целевом бакете
+    IN_PROGRESS --> DELETED: удалён клиентом
+    COPIED --> [*]
+    EXIST --> [*]
+    DELETED --> [*]

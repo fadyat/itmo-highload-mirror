@@ -1,0 +1,28 @@
+\documentclass{styles/diploma}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{lipsum}
+\usepackage[acronym,nonumberlist,nopostdot]{glossaries}
+\usepackage{enumitem}
+\usepackage[table]{xcolor}
+
+\graphicspath{{figures/}}
+
+\makeglossaries
+\loadglsentries{sections/glossary/entries}
+
+\begin{document}
+
+    \setcounter{page}{4}
+    \tableofcontents
+
+    \input{sections/glossary/terms}
+    \include{sections/introduction}
+    \include{sections/chapters/chapter1}
+    \include{sections/chapters/chapter2}
+    \include{sections/chapters/chapter3}
+    \include{sections/conclusion}
+
+    \bibliographystyle{bib/ugost2008ls}
+    \bibliography{bib/references}
+\end{document}

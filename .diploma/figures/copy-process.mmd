@@ -1,0 +1,14 @@
+flowchart LR
+    Src[(Source<br/>bucket)]
+    Dst[(Target<br/>bucket)]
+    Lister[Lister]
+    Copier[Copier]
+    DB[(Object keys DB)]
+    Locks[(Consul)]
+
+    Lister -->|ListObjects| Src
+    Lister -->|ключи + Init| DB
+    Copier -->|чтение / обновление<br/>статуса| DB
+    Copier -->|блокировка| Locks
+    Copier -->|GetObject| Src
+    Copier -->|PutObject| Dst

@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> READY
+    READY --> MIGRATION_SCHEDULED: запрошена миграция
+    MIGRATION_SCHEDULED --> MIGRATION_IN_PROGRESS: подготовка завершена
+    MIGRATION_IN_PROGRESS --> MIGRATION_VERIFYING: копирование завершено
+    MIGRATION_VERIFYING --> MIGRATION_FINISHED: проверка прошла
+    MIGRATION_VERIFYING --> MIGRATION_FAILED: проверка не прошла
+    MIGRATION_FINISHED --> READY
+    MIGRATION_FAILED --> MIGRATION_SCHEDULED: запрошена повторная миграция
+    READY --> DELETING: запрошено удаление
+    DELETING --> [*]

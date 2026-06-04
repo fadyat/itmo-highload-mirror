@@ -1,0 +1,567 @@
+%! suppress = Makeatletter
+%! suppress = TooLargeSection
+%! suppress = MissingLabel
+\documentclass{article}
+
+% Fields
+\usepackage{geometry}
+\geometry{top=25mm}
+\geometry{bottom=35mm}
+\geometry{left=20mm}
+\geometry{right=20mm}
+% ------------------------------------------------
+
+% Graphics
+\usepackage{color}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usepackage{blkarray}
+\usepackage{graphicx}
+% ------------------------------------------------
+
+% Math
+\usepackage{amsmath, amsfonts}
+\usepackage{amssymb}
+\usepackage{proof}
+\usepackage{mathrsfs}
+% Crossed-out symbols
+% https://tex.stackexchange.com/questions/75525/how-to-write-crossed-out-math-in-latex
+\usepackage[makeroom]{cancel}
+\usepackage{mathtools}
+% ------------------------------------------------
+
+% Additional font sizes
+% https://www.overleaf.com/learn/latex/Questions/How_do_I_adjust_the_font_size%3F
+\usepackage{moresize}
+% Additional colors
+% https://www.overleaf.com/learn/latex/Using_colours_in_LaTeX
+\usepackage{xcolor}
+% \texttimes
+\usepackage{textcomp}
+% ------------------------------------------------
+
+% Language
+\usepackage[utf8] {inputenc}
+\usepackage[T2A] {fontenc}
+\usepackage[english, russian] {babel}
+\usepackage{indentfirst, verbatim}
+\usetikzlibrary{cd, babel}
+% ------------------------------------------------
+
+% Fonts
+\usepackage{stmaryrd}
+\usepackage{cmbright}
+\usepackage{wasysym}
+% ------------------------------------------------
+
+% Code
+% https://tex.stackexchange.com/questions/99475/how-to-invoke-latex-with-the-shell-escape-flag-in-texstudio-former-texmakerx
+% Colored, requires --shell-escape compiling option
+% \usepackage{minted}
+% \setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#}
+\usepackage{listings}
+% ------------------------------------------------
+
+% Custom envs
+% https://tex.stackexchange.com/questions/371286/draw-a-horizontal-line-in-latex
+\newenvironment{proof}{\subparagraph{\hspace{-1em}Решение:\newline}}{\par\noindent\rule{\textwidth}{0.4pt}}
+% ------------------------------------------------
+
+% Custom commands
+\newcommand{\comb}[1]{\mathbf{#1}}
+\newcommand{\step}{\rightsquigarrow}
+\newcommand{\term}[1]{\mathbf{#1}}
+\newcommand{\ap}{~}
+\newcommand{\termdef}{\coloneqq}
+\newcommand{\subst}[3]{\left[#2 \mapsto #3 \right] #1}
+\newcommand{\eqbeta}{=_\beta}
+\newcommand{\eqeta}{=_\eta}
+\newcommand{\tlist}[1]{\term{[}#1\term{]}} % list-term
+\renewcommand{\emph}[1]{{\color{blue} \textit{#1}}}
+% ------------------------------------------------
+
+% Head
+\usepackage{fancybox,fancyhdr}
+\usepackage{hyperref}
+\pagestyle{fancy}
+\fancyhead[R]{Фадеев Артем}
+\fancyhead[L]{ИТМО MHS, ФП 2025, Дз 2}
+% ------------------------------------------------
+
+% Numbering
+% https://tex.stackexchange.com/questions/80113/hide-section-numbers-but-keep-numbering
+\makeatletter
+\renewcommand\thesubsection{Блок \@arabic\c@subsection.\hspace{-0.8em}}
+\renewcommand\thesubsubsection{Задание \@arabic\c@subsection.\@arabic\c@subsubsection\hspace{-0.8em}}
+% https://tex.stackexchange.com/questions/327689/numbering-subsubsections-with-letters
+\renewcommand\theparagraph{\alph{paragraph})\hspace{-0.8em}}
+% https://tex.stackexchange.com/questions/129208/numbering-paragraphs-in-latex
+\setcounter{secnumdepth}{4}
+\makeatother
+% ------------------------------------------------
+
+\begin{document}
+    \section*{Традиционное введение}
+
+    \subsection*{Система оценивания и общие советы}
+
+    Оценка за курс ставится по результатам экзамена, где будет учитываться также и успеваемость по практике.
+    Чтобы получить допуск на экзамен, нужно получить зачёт по практике, который ставится, если зачтены все домашние задания, кроме, может быть, одного.
+
+    Каждое домашнее задание разделено на блоки по разновидностям задач.
+    Чтобы зачесть задание нужно либо набрать локальный минимум по каждому блоку, либо набрать глобальный минимум по сумме всех блоков.
+    Таким образом, если у вас какой-то блок совсем не получается и вы не можете набрать по нему локальный минимум, вы можете решить побольше в других блоках и зачесть задание, достигнув глобального минимума по общей сумме баллов решенных задач.
+    Если обоими способами не получается набрать нужное количество~--- ничего страшного, потом будет достаточно возможностей добрать баллов.
+    Постарайтесь тратить как можно меньше сил на тревогу и переживания.
+
+    Ваша задача в каждом дз --- постараться как можно глубже погрузиться в как можно большее количество заданий.
+    Так вы либо хорошо разберетесь сами, либо дадите себе все шансы понять разбор заданий на следующей паре так, чтобы после него уже не оставалось белых пятен.
+    За неполные решения тоже ставятся баллы~--- не стесняйтесь браться и пробовать.
+    Пересматривайте материалы с практик и лекций~--- там должно быть всё необходимое.
+    Старайтесь как можно раньше браться за домашки, пока свежи воспоминания с практики и достаточно времени на осознание.
+    Если уже хорошо знакомы с темой, не тратьте время на вводные задачки в начале блоков, начинайте с середины (но проверить базовые знания тоже может быть хорошей идеей).
+
+    Совет: как только набираете нужное количество баллов, переключайтесь на задания по другим курсам.
+    Если есть желание, решать больше можно и приветствуется --- будет бонусом.
+    Но ни в коем случае не в ущерб сну и не во вред себе.
+
+    \subsection*{Помощь}
+
+    Не стесняйтесь обращаться за помощью к вашим преподавателям, они тут как раз для этого.
+    Все контакты вы найдёте на вики.
+    Нам не сложно и в радость вам помогать, а наблюдать молчаливое непонимание как раз грустно.
+    Не обесценивайте свои трудности, ищите поддержки --- и найдёте.
+
+    Также просите помощи у своих одногруппников, помогать интересно и полезно.
+
+    Если вы помогаете, не навредите!
+    Предлагайте объяснения, а не ответы.
+    Отталкивайтесь от потребностей собеседника, а не от желания показать себя.
+    Человеку и так может быть не очень здорово, довольно просто закопать его ещё глубже, говоря избыток умных слов и демонстрируя свою эрудицию.
+
+    Помните: у всех разная подготовка и способности к построению определённых видов умозрительных конструкций, с этим особо ничего не сделаешь.
+    Но это никак вас не определяет.
+    Чем сложнее даётся, тем ценнее любой шажок.
+    Не будьте слишком требовательны к себе и двигайтесь в своём темпе.
+    Всё будет хорошо, гарантируем.
+
+    Не всем просто психологически обращаться за помощью.
+    Но это важно, без этого никак.
+    Попробуйте относиться к этому как к части работы и постарайтесь, оно окупится.
+
+    \subsection*{Порядок сдачи домашних заданий по лямбда-исчислению}
+
+    \begin{itemize}
+        \item Задания выполняются в исходнике данного документа (если вы не знакомы с \LaTeX~--- для вас следующий раздел).
+        \item Оформление решений:
+        \begin{itemize}
+            \item Укажите в шапке документа своё имя.
+            \item Оформляйте формулы разборчиво.
+            Соблюдайте стиль из слайдов: синтаксис термов, комбинаторы большими жирными буквами, названия термов маленькими жирными буквами, мета-переменные большими буквами, переменные маленькими.
+            \item Нумеруйте переходы, чтобы можно было удобнее ссылаться в рецензии.
+            \item Приводите решение достаточно полно, чтобы его можно было быстро проверить, а не догадываться, как вы сделали тот или иной переход.
+            Сильно много писать тоже не надо, соблюдайте баланс.
+            Попробуйте поставить себя на место преподавателя и подумать, что нужно увидеть, чтобы понять: решено верно, студент разобрался.
+            \item Код на лямбда-исчислении, как и на любом другом языке программирования, нужно тестировать!
+            Старайтесь тестировать свои решения на простых примерах и приводить выкладки в документе.
+            \item Также вводите вспомогательные определения для достижения читаемости.
+        \end{itemize}
+        \item Pdf присылается на почту вашего преподавателя в письме с темой вида: \textit{Дз N, Фамилия Имя}.
+        \item Старайтесь прислать первую версию к мягкому дедлайну --- до полуночи за двое суток до следующей практики.
+        Так у преподавателя будет время прислать рецензию, а у вас --- исправить до жесткого дедлайна.
+        \item Исправления посылаются по почте как ответ на рецензию.
+        Указывайте в документе или письме, какие пункты вы изменили.
+        \item Жесткий дедлайн --- полночь перед практикой.
+    \end{itemize}
+
+    Указание: если решение получается громоздким и вы в нём путаетесь, значит вы что-то делаете не лучшим образом.
+    В таком случае поработайте над своей методологией.
+    Если не уверены в ходе мыслей, стоит обратиться с просьбой его провалидировать.
+
+    \subsection*{\LaTeX}
+
+    Вам не нужно изучать \LaTeX чтобы качественно выполнить все задания.
+    Достаточно просто делать по образцу того, как оформлены сами задачи.
+    Однако следующие материалы могут оказаться полезными:
+
+    \begin{itemize}
+        \item \href{https://www.overleaf.com/learn}{Overleaf} --- туториалы по \LaTeX и онлайн редактор.
+        \item \href{https://youtu.be/NOslSvJs29I}{LaTeX: краткое введение в качественную типографику}.
+    \end{itemize}
+
+    Репозиторий с исходниками можно скачать с github (\href{https://github.com/mse-fp2023/calculus-hws}{ссылка}).
+
+    Для работы существуют следующие варианты:
+    \begin{itemize}
+        \item Локальная установка \LaTeX дистрибутива и ваш любимый текстовый редактор с плагином для \LaTeX.
+        \item Онлайн редактор, например, \url{https://www.overleaf.com/}.
+    \end{itemize}
+
+    Сборка:
+    \begin{itemize}
+        \item Если вы пользуетесь IntelliJ IDEA, конфигурация сборки добавлена в репозиторий.
+        Выбираете нужную и жмакаете зелёную стрелку.
+        \item Можете воспользоваться утилитой Make: вызовите \texttt{make} в корневой директории репозитория.
+        \item В случае TexStudio и overleaf они собирают сами, но работать так менее удобно.
+    \end{itemize}
+
+    \begin{flushright}
+        Успехов! \\
+        Всецело ваша, команда курса
+    \end{flushright}
+
+    \newpage
+
+
+    \section*{Дз 2. Больше лямбда-исчисления}
+
+    Глобальный минимум: 9б.
+
+    \subsection{Комбинатор рекурсии}
+
+    Локальный минимум: 2б.
+
+    \subsubsection{}
+
+    Решите следующие уравнения на лямбда-термы и произведите проверку решений.
+
+    \paragraph{(1б)}
+
+    $\forall M\ldotp F~M \eqbeta M~F$
+
+    \begin{proof}
+        Перепишем уравнение в виде рекурсивного определения:
+        \[
+            F = \lambda x.\; x F.
+        \]
+
+        Введём функционал
+        \[
+            \Phi = \lambda f x.\; x f,
+        \]
+
+        Тогда рекурсивное уравнение можно записать как
+        \[
+            F = \Phi F.
+        \]
+
+        По определению комбинатора неподвижной точки $Y$ получаем решение:
+        \[
+            F = Y \Phi,
+        \]
+        так как
+        \[
+            Y \Phi \eqbeta \Phi (Y \Phi) = \lambda x.\; x (Y \Phi) = \lambda x.\; x F.
+        \]
+
+        Проверка:
+        \[
+            F M = (\lambda x.\; x F) M \eqbeta M F
+        \]
+    \end{proof}
+
+    \paragraph{(1б)}
+
+    $\forall M~N\ldotp F~M~N \eqbeta F~N~(M~F)$
+
+    \begin{proof}
+        \begin{gather*}
+            F = \lambda m n.\; F n (m F).\\
+            \Phi = \lambda f m n.\; f n (m f),\\
+            F = \Phi F.\\
+            F = Y \Phi,\\
+            Y \Phi \eqbeta \Phi (Y \Phi) = \lambda m n.\; (Y \Phi) n (m (Y \Phi)) = \lambda m n.\; F n (m F).\\
+        \end{gather*}
+
+        Проверка:
+        \[
+            F~M~N = (\lambda m n.\; F n (m F)) M N \eqbeta (\lambda n.\; F n (M F)) N \eqbeta F N (M F)
+        \]
+    \end{proof}
+
+    \subsubsection{(1б)}
+
+    Даны термы $A$ и $B$.
+    Найдите $F$ и $G$ такие, что
+    \[
+        \left\{
+            \begin{aligned}
+                F &\eqbeta A~F~G \\
+                G &\eqbeta B~F~G \\
+            \end{aligned}\right.
+    \]
+
+    Подсказка: сначала подумайте, что из чего нужно выражать.
+
+    \begin{proof}
+        \begin{gather*}
+            G = B F G\\
+            G = (\lambda g.\; B F g) G\\
+            G = Y (\lambda g.\; B F g)\\
+            F = A F G\\
+            F = A F (Y \lambda g.\; B F g)\\
+            F = (\lambda f.\; A f (B f (Y \lambda g.\; B f g))) F\\
+            F = Y (\lambda f.\; A f (B f (Y \lambda g.\; B f g)))\\
+            G = Y (\lambda g.\; B F g)\\
+            G = Y (\lambda g.\; B (Y \lambda f.\; A f (B f (Y \lambda g.\; B f g))) g)\\
+        \end{gather*}
+    \end{proof}
+
+    \subsubsection{(2б)}
+
+    Как мы уже увидели, в чистом лямбда-исчислении можно производить рекурсивные вычисления.
+    И это при том, что в языке есть только переменные, аппликация и абстракция!
+    Этого достигают с помощью построения комбинатора рекурсии, $\comb{Y}$ или других.
+
+    В вашем любимом языке программирования рекурсия встроена неявно.
+    Достаточно просто в теле функции вызвать её же саму по имени.
+    Но что если имени нет, например, мы хотим заполучить рекурсивную лямбда-функцию?
+
+    Реализуйте комбинатор рекурсии в вашем любимом языке программирования, используя встроенную в язык рекурсию.
+    Ваш язык энергичный, предпримите меры от расходимости.
+
+    С помощью написанного комбинатора реализуйте простейший рекурсивный факториал в виде \\ \texttt{factorial = \ldots}.
+
+    За написание в статически-типизированном языке полагается дополнительный балл (но это может быть не просто).
+
+    Подсказка: воспользуйтесь свойством комбинатора рекурсии: $\comb{Y}~F~M \eqbeta F~(\comb{Y}~F)~M$.
+
+    \begin{proof}
+        TODO % TODO
+    \end{proof}
+
+    \subsection{Программирование в $\lambda$-исчислении: числа и списки по Чёрчу}
+
+    Локальный минимум: 4б.
+
+    \subsubsection{}
+
+    Задайте \emph{сильно нормализуемые}\footnote{На практике это означает, что нельзя использовать, например, $\comb{Y}$-комбинатор, но можно давать ответ в виде термов не в $\beta$-нормальной форме.} лямбда-термы с описанными свойствами.
+
+    Подсказка: нетривиальный тут только первый пункт.
+
+    \paragraph{(1б)}
+
+    $\term{minus}$: если $n$ и $m$ ~--- числа Чёрча, то $\term{minus}~n~m = k$,
+    если $\term{plus}~m~k = n$, и $\term{minus}~n~m = \term{0}$, если такого $k$
+    нет.
+
+    \begin{proof}
+        Проблема в том, что числа Чёрча не хранят предыдущего значения, поэтому нельзя просто вычесть 1.
+        Будем использовать \emph{пару} $(\text{текущее}, \text{предыдущее})$, которая обновляется на каждом шаге.
+        После $n$ итераций второе значение пары будет равно $n-1$.
+
+        \[
+            \term{pred} = \lambda n f x.\; n\; (\lambda g h.\; h (g f))\; (\lambda u.\; x)\; (\lambda u.\; u)
+        \]
+
+        \textbf{Разбор формулы}
+        \begin{itemize}
+            \item $n$ --- число Чёрча, задаёт количество итераций.
+            \item $(\lambda g h.\; h (g f))$ --- функция-шаг:
+            \begin{itemize}
+                \item $g$ хранит текущую функцию (накопленное применение $f$);
+                \item $h$ хранит предыдущую функцию;
+                \item результат $h(g f)$ обновляет пару: новое текущее = $g f$, новое предыдущее = $h(g f)$.
+            \end{itemize}
+            \item $(\lambda u.\; x)$ --- начальное значение, которое соответствует паре $(0,0)$.
+            \item $(\lambda u.\; u)$ --- извлечение второго элемента пары после $n$ шагов; именно оно возвращает $n-1$.
+        \end{itemize}
+
+        \[
+            \term{minus} = \lambda n m.\; m~\term{pred}~n
+        \]
+    \end{proof}
+
+    \paragraph{(0.5б)}
+
+    $\term{lt}$: если $n$ и $m$ ~--- числа Чёрча, то $\term{lt}~n~m = \term{true}$, если $n < m$, и $\term{false}$ в противном случае.
+
+    \begin{proof}
+        \begin{gather*}
+            \term{isZero} = \lambda n.\; n (\lambda x.\; \term{false})\; \term{true}\\
+            \term{not} = \lambda b.\; b\ \term{false}\ \term{true}\\
+            \term{lt} = \lambda n m.\; \term{not}(\term{isZero}(\term{minus}~mn))\\
+        \end{gather*}
+    \end{proof}
+
+    \paragraph{(0.5б)}
+
+    $\term{equal}$: если $n$ и $m$ ~--- числа Чёрча, то $\term{equal}~n~m = \term{true}$, если $n = m$, и $\term{false}$ в противном случае.
+
+    \begin{proof}
+        \begin{gather*}
+            \term{and} = \lambda p q.\; p q p\\
+            \term{equal} = \lambda n m.\; \term{and}~(\term{isZero}(\term{minus}~n m))~(\term{isZero}(\term{minus}~m n))
+        \end{gather*}
+    \end{proof}
+
+    \subsubsection{(1б)}
+
+    Используя комбинатор примитивной рекурсии, напишите терм, который
+    находит $n$-ое число Фибоначчи.
+
+    \begin{proof}
+        \begin{gather*}
+            \term{pair} = \lambda a b f. f a b, \quad
+            \term{fst} = \lambda p. p\,(\lambda a b. a), \quad
+            \term{snd} = \lambda p. p\,(\lambda a b. b)\\
+            \term{Fib} =
+            \lambda n.\,
+            \term{fst}\Big(
+            R\,
+            (\term{pair}~0~1)\,
+            (\lambda p.\, \term{pair}(\term{snd}~p)~(\term{plus}(\term{fst}~p)(\term{snd}~p)))\,
+            n
+            \Big)\\
+        \end{gather*}
+    \end{proof}
+
+    \subsubsection{}
+
+    Задайте следующие простые сильно нормализуемые функции над списками.
+
+    Здесь и далее подразумевается, что списки представлены в виде \textbf{списков Чёрча}.
+
+    \paragraph{(0.5б)}
+
+    Напишите функцию $\term{sum}$, суммирующий элементы списка: $\term{sum} \ap \tlist{\term{1}, \term{2}, \term{3}} \eqbeta \term{6}$.
+
+    \begin{proof}
+        \[
+            \term{sum} = \lambda l.\; l~\term{plus}~\term{0}
+        \]
+    \end{proof}
+
+    \paragraph{(0.5б)}
+
+    Напишите функцию $\term{length}$, вычисляющий длину списка: $\term{length} \ap \tlist{\term{1}, \term{2}} \eqbeta \term{2}$
+
+    \begin{proof}
+        \[
+            \term{length} = \lambda l.\; l~(\lambda h t.\; \term{succ}~t)~\term{0}
+        \]
+    \end{proof}
+
+    \subsubsection{(1б)}
+
+    Напишите функцию, которая сильно нормализуемо возвращает последний элемент непустого списка.
+
+    \begin{proof}
+        TODO % TODO
+    \end{proof}
+
+    \subsubsection{(2б)}
+
+    Напишите функцию $\term{tail}$, которая сильно нормализуемо возвращает хвост списка, то есть список без первого элемента: например, $\term{tail}~\tlist{~} = \tlist{~}$ и $\term{tail}~\tlist{\term{5},\term{10},\term{13}} = \tlist{\term{10}, \term{13}}$.
+
+    \begin{proof}
+        TODO % TODO
+    \end{proof}
+
+    \subsubsection{(1.5б)}
+
+    Вспомним определение умножения чисел Чёрча:
+    \[\term{mult} = \lambda n~m~s\ldotp n~(m~s)\]
+    Рассмотрим его аналог для списков:
+    \[\term{listMult} = \lambda n~m~s\ldotp n~(\lambda e\ldotp m~(\term{curry}~s~e))\]
+    Что делает эта функция?
+    Проредуцируйте наглядный пример для проверки предположения.
+
+    \begin{proof}
+        TODO % TODO
+    \end{proof}
+
+    \subsection{Стратегии редукции и нормальные формы}
+
+    Локальный минимум: 1б.
+
+    \subsubsection{(1б)}
+
+    Дан терм:
+    \[\lambda y\ldotp z~(\lambda x\ldotp \comb{I}~(\comb{I}~\comb{I})~(\comb{I}~\comb{I}))~x~y\]
+
+    Дважды проредуцируйте его до нормальной формы, расписывая каждый шаг редукции: один раз с использованием аппликативной стратегии, во второй ~--- с
+    использованием нормальной стратегии.
+
+    \begin{proof}
+        \begin{gather*}
+            \begin{aligned}
+                \text{Аппликативная стратегия:} \quad
+                \lambda y. z~(\lambda x. \mathsf{I}~(\mathsf{I}~\mathsf{I})~(\mathsf{I}~\mathsf{I}))~x~y
+                &\;\to_\beta\; \lambda y. z~(\lambda x. \mathsf{I}~\mathsf{I}~(\mathsf{I}~\mathsf{I}))~x~y \\
+                &\;\to_\beta\; \lambda y. z~(\lambda x. \mathsf{I}~\mathsf{I}~\mathsf{I})~x~y \\
+                &\;\to_\beta\; \lambda y. z~(\lambda x. \mathsf{I}~\mathsf{I})~x~y \\
+                &\;\to_\beta\; \lambda y. z~(\lambda x. \mathsf{I})~x~y
+            \end{aligned}\\[1em]
+            \begin{aligned}
+                \text{Нормальная стратегия:} \quad
+                \lambda y. z~(\lambda x. \mathsf{I}~(\mathsf{I}~\mathsf{I})~(\mathsf{I}~\mathsf{I}))~x~y
+                &\;\to_\beta\; \lambda y. z~(\lambda x. (\mathsf{I}~\mathsf{I})~(\mathsf{I}~\mathsf{I}))~x~y \\
+                &\;\to_\beta\; \lambda y. z~(\lambda x. \mathsf{I}~(\mathsf{I}~\mathsf{I}))~x~y \\
+                &\;\to_\beta\; \lambda y. z~(\lambda x. \mathsf{I}~\mathsf{I})~x~y \\
+                &\;\to_\beta\; \lambda y. z~(\lambda x. \mathsf{I})~x~y
+            \end{aligned}
+        \end{gather*}
+    \end{proof}
+
+    \subsubsection{}
+
+    Приведите примеры замкнутых термов (и объясните выбор).
+
+    \paragraph{(0.5б)}
+
+    Находится в WHNF, но не в HNF.
+
+    \begin{proof}
+
+        Покажем, что такого терма не существует.
+
+        По определению, терм находится в WHNF, если он имеет вид
+        \[
+            M = \lambda x_1 \dots \lambda x_n.\; R,
+        \]
+        где $R$ не является $\beta$-редексом, то есть не имеет вида $(\lambda y.P)\,Q$.
+
+        Возможные формы $R$: переменная $y$, аппликация $y\,M_1 \dots M_k$, либо абстракция $\lambda z.P$. Если $R$ — абстракция, её можно включить в префикс внешних $\lambda$. После снятия всех внешних $\lambda$ остаётся терм, который не является редексом и не начинается с $\lambda$, следовательно, это либо переменная, либо аппликация с переменной в голове.
+
+        Это в точности определение HNF. Следовательно, любой терм в WHNF автоматически находится в HNF, и терма, который в WHNF, но не в HNF, не существует.
+    \end{proof}
+
+    \paragraph{(0.5б)}
+
+    Находится в HNF, но не в NF.
+
+    \begin{proof}
+        Рассмотрим терм
+        \[
+            N = \lambda x.\; x\,((\lambda y. y)\,x).
+        \]
+
+        Терм находится в HNF, так как после удаления внешней
+        \(\lambda\) получаем выражение вида
+        \[
+            x\,M,
+        \]
+        где в позиции головы стоит переменная \(x\).
+
+        Однако он не находится в NF, так как внутри аргумента
+        присутствует \(\beta\)-редекс
+        \[
+            (\lambda y. y)\,x.
+        \]
+        Следовательно, в терме существует \(\beta\)-редуцируемое подвыражение,
+        и он не является нормальной формой.
+    \end{proof}
+
+    \subsubsection{(3б)}
+
+    Две формулировки одного и того же задания в студию:
+    \begin{itemize}
+        \item Пусть дан терм $M$.
+        Покажите, как подобрать такой терм $N$, что $N$ находится в нормальной форме и $N~\comb{I} =_\beta M$.
+        \item Более привычная математикам формулировка: докажите, что для каждого $M$ существует $N$ в нормальной форме такой, что $N~\comb{I} \eqbeta M$.
+    \end{itemize}
+
+\end{document}
+

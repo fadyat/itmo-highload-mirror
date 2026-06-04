@@ -1,0 +1,32 @@
+flowchart TB
+    direction LR
+    subgraph PUT
+        direction TB
+        Cp[Client] -->|PUT| Sp[s3-shifter]
+        Sp --> Dp[(Target)]
+    end
+    subgraph GET
+        direction TB
+        Cg[Client] -->|GET| Sg[s3-shifter]
+        Sg -->|1| Dg[(Target)]
+        Sg -.->|2 при 404| Srg[(Source)]
+    end
+    subgraph DELETE
+        direction TB
+        Cd[Client] -->|DELETE| Sd[s3-shifter]
+        Sd -->|1| Srd[(Source)]
+        Sd -->|2| Dd[(Target)]
+    end
+    subgraph LIST
+        direction TB
+        Cl[Client] -->|LIST| Sl[s3-shifter]
+        Sl --> Srl[(Source)]
+        Sl --> Dl[(Target)]
+    end
+    subgraph MPU
+        direction TB
+        Cm[Client] -->|MPU| Sm[s3-shifter]
+        Sm -->|новые| Dm[(Target)]
+        Sm -.->|до миграции| Srm[(Source)]
+    end
+

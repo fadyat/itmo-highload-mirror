@@ -1,0 +1,34 @@
+\newglossaryentry{s3}{
+    name={S3},
+    description={протокол объектного хранилища, изначально предложенный Amazon Simple Storage Service и ставший де-факто стандартом}
+}
+
+\newglossaryentry{staas}{
+    name={STaaS},
+    description={(\textit{Storage as a Service})~--- модель предоставления хранилищ как сервиса; внутренняя платформа <<Авито>>, объединяющая S3-кластеры и предоставляющая командам доступ к ним по единому API}
+}
+
+\newglossaryentry{bucket}{
+    name={Bucket},
+    description={контейнер для хранения объектов в S3, имеющий уникальное имя в пределах хранилища}
+}
+
+\newglossaryentry{rclone}{
+    name={RClone},
+    description={свободная утилита для синхронизации данных между файловыми системами и облачными хранилищами}
+}
+
+\newglossaryentry{consul}{
+    name={Consul},
+    description={сервис обнаружения, конфигурации и распределённой координации от HashiCorp; в \gls{staas} используется как DNS-сервис для маршрутизации клиентов к S3-кластерам и как механизм распределённых блокировок}
+}
+
+\newglossaryentry{vault}{
+    name={Vault},
+    description={хранилище секретов от HashiCorp; в \gls{staas} хранит учётные данные доступа к S3-бакетам}
+}
+
+\newglossaryentry{slo}{
+    name={SLO},
+    description={(\textit{Service Level Objective})~--- целевой показатель качества обслуживания, который платформа гарантирует клиентам, например 95-й перцентиль времени ответа API}
+}
