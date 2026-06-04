@@ -1,0 +1,16 @@
+{
+  "name": "hw1",
+  "version": "1.0.0",
+  "description": "hw1",
+  "main": "index.js",
+  "scripts": {
+    "fmt": "prettier --write . | grep -v unchanged || true"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "prettier": "3.8.3"
+  }
+}

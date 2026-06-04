@@ -1,0 +1,36 @@
+services:
+  spark:
+    container_name: hw1-spark
+    image: apache/spark:3.5.3
+    user: root
+    working_dir: /opt/spark/work-dir
+    volumes:
+      - ./spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./spark/apps:/apps
+      - ./data:/data
+    entrypoint: ["bash", "-c", "tail -f /dev/null"]
+    depends_on:
+      - postgres
+      - mongo
+
+  postgres:
+    container_name: hw1-postgres
+    image: postgres:16
+    environment:
+      POSTGRES_DB: orders
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  mongo:
+    container_name: hw1-mongo
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: orders
+    volumes:
+      - ./mongo/init.js:/docker-entrypoint-initdb.d/init.js

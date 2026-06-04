@@ -1,0 +1,8 @@
+[package]
+name = "paperio-strategy"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+paperio-proto = { version = "0.1.0", path = "../proto" }
+rand = "0.9.2"

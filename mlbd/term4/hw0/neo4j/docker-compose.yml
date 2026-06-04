@@ -1,0 +1,33 @@
+services:
+  neo4j:
+    container_name: hw0-neo4j
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: neo4j/password
+      NEO4JLABS_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ./init.cypher:/var/lib/neo4j/import/init.cypher
+      - ./queries:/queries
+    healthcheck:
+      test: cypher-shell -u neo4j -p password "RETURN 1"
+      interval: 5s
+      retries: 10
+
+  neo4j-init:
+    container_name: hw0-neo4j-init
+    image: neo4j:5
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    entrypoint:
+      - bash
+      - -c
+      - |
+        cat /import/init.cypher |
+        cypher-shell -u neo4j -p password -a bolt://neo4j:7687
+    volumes:
+      - ./init.cypher:/import/init.cypher

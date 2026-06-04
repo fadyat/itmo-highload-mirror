@@ -1,0 +1,13 @@
+services:
+  postgres:
+    container_name: hw0-postgres
+    image: postgres:16
+    environment:
+      POSTGRES_DB: university
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./queries:/queries

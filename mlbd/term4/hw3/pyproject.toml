@@ -1,0 +1,59 @@
+[project]
+name = "hw3"
+version = "0.1.0"
+description = "Spark ML lab — classification and clustering"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "pyspark>=3.5,<4",
+    "pandas>=2.2,<3",
+    "numpy>=1.26,<2",
+    "scikit-learn>=1.5,<1.7",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "jupyter>=1.1",
+    "kagglehub>=0.3",
+    "pandas-stubs~=2.3.3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific
+    "N",    # pep8-naming
+    "RET",  # flake8-return
+    "PIE",  # flake8-pie
+    "PERF", # perflint
+    "PL",   # pylint
+]
+ignore = [
+    "E501",    # line length handled separately
+    "E402",    # imports not at top of cell — ok in notebooks
+    "PLR0913", # too many arguments
+    "PLR2004", # magic value in comparison
+    "N806",    # non-lowercase variable in function (Spark DataFrame names)
+    "N812",    # canonical PySpark idiom: `from pyspark.sql import functions as F`
+    "RUF001",  # ambiguous unicode (we keep cyrillic literals on purpose)
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = []
+

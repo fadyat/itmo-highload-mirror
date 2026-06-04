@@ -1,0 +1,6 @@
+.idea
+.venv
+ecoli_1k.fna
+ecoli_reads.fastq
+contigs_k31.fasta
+graphs

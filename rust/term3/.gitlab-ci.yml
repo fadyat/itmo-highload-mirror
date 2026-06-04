@@ -1,0 +1,11 @@
+grade:
+  image: gitlab.manytask.org:5050/rust/public-2025-fall/grader
+  rules:
+    - if: '$CI_COMMIT_REF_NAME =~ /^submit\//'
+  script:
+    - cd /opt/shad/rust && cargo xtask grade
+        --student-repo $CI_PROJECT_DIR
+        --original-repo .
+        --ci-branch-name $CI_COMMIT_REF_NAME
+        --user-id $GITLAB_USER_ID;
+  timeout: 10 minutes

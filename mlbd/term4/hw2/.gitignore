@@ -1,0 +1,10 @@
+data/*
+!data/.gitkeep
+.venv/
+__pycache__/
+.ruff_cache/
+.idea
+api/bin/
+consumers/bin/
+*.test
+coverage.out

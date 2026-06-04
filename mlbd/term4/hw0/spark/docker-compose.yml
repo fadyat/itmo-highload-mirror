@@ -1,0 +1,15 @@
+services:
+  spark:
+    container_name: hw0-spark
+    image: apache/spark:3.5.3
+    user: root
+    volumes:
+      - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./init.py:/opt/spark/init.py
+      - ./queries:/queries
+    entrypoint:
+      - bash
+      - -c
+      - |
+        /opt/spark/bin/spark-submit /opt/spark/init.py &&
+        tail -f /dev/null

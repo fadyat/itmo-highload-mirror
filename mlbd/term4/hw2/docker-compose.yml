@@ -1,0 +1,226 @@
+x-kafka-common: &kafka-common
+  image: apache/kafka:3.9.2
+  environment: &kafka-env
+    CLUSTER_ID: MkU3OEVGNTcwNTJENDM2Qk
+    KAFKA_PROCESS_ROLES: broker,controller
+    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
+    KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+    KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+    KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+    KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+    KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+  healthcheck:
+    test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+    interval: 5s
+    timeout: 5s
+    retries: 30
+
+services:
+  postgres:
+    container_name: hw2-postgres
+    image: postgres:16
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - ./infra/postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d app"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    profiles: ["db", "app", "all"]
+
+  api:
+    container_name: hw2-api
+    build:
+      context: ./api
+    environment:
+      PG_DSN: postgres://admin:admin@postgres:5432/app?sslmode=disable
+      DUMP_DIR: /data
+      DUMP_INTERVAL: 60s
+      HTTP_ADDR: ":8080"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["app", "all"]
+
+  kafka1:
+    <<: *kafka-common
+    container_name: hw2-kafka1
+    environment:
+      <<: *kafka-env
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:9092
+    profiles: ["kafka", "app", "all"]
+
+  kafka2:
+    <<: *kafka-common
+    container_name: hw2-kafka2
+    environment:
+      <<: *kafka-env
+      KAFKA_NODE_ID: 2
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:9092
+    profiles: ["kafka", "app", "all"]
+
+  kafka3:
+    <<: *kafka-common
+    container_name: hw2-kafka3
+    environment:
+      <<: *kafka-env
+      KAFKA_NODE_ID: 3
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:9092
+    profiles: ["kafka", "app", "all"]
+
+  kafka-init:
+    container_name: hw2-kafka-init
+    image: apache/kafka:3.9.2
+    depends_on:
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -euo pipefail
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka1:9092 \
+          --create --if-not-exists --topic users \
+          --partitions 10 --replication-factor 3
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka1:9092 --describe --topic users
+    restart: "no"
+    profiles: ["kafka", "app", "all"]
+
+  elasticsearch:
+    container_name: hw2-elasticsearch
+    image: elasticsearch:8.15.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health | grep -E 'green|yellow' >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    profiles: ["es", "app", "all"]
+
+  spark-fs-kafka:
+    container_name: hw2-spark-fs-kafka
+    image: apache/spark:3.4.3
+    user: root
+    working_dir: /opt/spark/work-dir
+    volumes:
+      - ./infra/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./infra/spark/apps:/apps
+      - ./data:/data
+    environment:
+      KAFKA_BROKERS: kafka1:9092,kafka2:9092,kafka3:9092
+    command: ["/opt/spark/bin/spark-submit", "/apps/01_fs_to_kafka.py"]
+    restart: unless-stopped
+    depends_on:
+      kafka-init: { condition: service_completed_successfully }
+    profiles: ["app", "all"]
+
+  cassandra:
+    container_name: hw2-cassandra
+    image: cassandra:5
+    environment:
+      CASSANDRA_CLUSTER_NAME: hw2
+      HEAP_NEWSIZE: 128M
+      MAX_HEAP_SIZE: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    profiles: ["cassandra", "app", "all"]
+
+  cassandra-init:
+    container_name: hw2-cassandra-init
+    image: cassandra:5
+    depends_on:
+      cassandra: { condition: service_healthy }
+    volumes:
+      - ./infra/cassandra.cql:/init/cassandra.cql:ro
+    entrypoint: ["bash", "-c", "cqlsh cassandra -f /init/cassandra.cql"]
+    restart: "no"
+    profiles: ["cassandra", "app", "all"]
+
+  mongo:
+    container_name: hw2-mongo
+    image: mongo:7
+    environment:
+      MONGO_INITDB_DATABASE: app
+    volumes:
+      - ./infra/mongo.js:/docker-entrypoint-initdb.d/init.js:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' | grep -q 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    profiles: ["mongo", "app", "all"]
+
+  cassandra-writer:
+    container_name: hw2-cassandra-writer
+    build:
+      context: ./consumers
+      args:
+        TARGET: cassandra-writer
+    environment:
+      KAFKA_BROKERS: kafka1:9092,kafka2:9092,kafka3:9092
+      KAFKA_TOPIC: users
+      KAFKA_GROUP: cassandra-writer
+      CASSANDRA_HOSTS: cassandra
+      CASSANDRA_KEYSPACE: app
+    depends_on:
+      cassandra-init: { condition: service_completed_successfully }
+      kafka-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+    profiles: ["app", "all"]
+
+  mongo-writer:
+    container_name: hw2-mongo-writer
+    build:
+      context: ./consumers
+      args:
+        TARGET: mongo-writer
+    environment:
+      KAFKA_BROKERS: kafka1:9092,kafka2:9092,kafka3:9092
+      KAFKA_TOPIC: users
+      KAFKA_GROUP: mongo-writer
+      MONGO_URI: mongodb://mongo:27017/app
+    depends_on:
+      mongo: { condition: service_healthy }
+      kafka-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+    profiles: ["app", "all"]
+
+  spark-fs-es:
+    container_name: hw2-spark-fs-es
+    image: apache/spark:3.4.3
+    user: root
+    working_dir: /opt/spark/work-dir
+    volumes:
+      - ./infra/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./infra/spark/apps:/apps
+      - ./data:/data
+    environment:
+      ES_NODES: elasticsearch
+      ES_PORT: "9200"
+    command: ["/opt/spark/bin/spark-submit", "/apps/02_fs_to_es.py"]
+    restart: unless-stopped
+    depends_on:
+      elasticsearch: { condition: service_healthy }
+    profiles: ["app", "all"]

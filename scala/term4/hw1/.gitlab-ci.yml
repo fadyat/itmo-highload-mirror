@@ -1,0 +1,113 @@
+stages:
+  - block
+  - build-and-test
+  - grade
+  - trigger
+
+mr-block:
+  stage: block
+  interruptible: true
+  allow_failure: false
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      changes:
+        - project/*
+        - src/**/test/**/*
+        - .gitlab-ci.yml
+        - .scalafmt.conf
+        - .scalafix.conf
+        - .sbtopts
+        - build.sbt
+    - when: never
+  script:
+    - echo "Please don't change service files"
+    - exit 1
+
+mr-build:
+  image: sbtscala/scala-sbt:eclipse-temurin-alpine-21.0.8_9_1.12.4_2.13.18
+  stage: build-and-test
+  interruptible: true
+  allow_failure: false
+  needs:
+    - job: mr-block
+      optional: true
+      artifacts: false
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+    - when: never
+  script:
+    - sbt "scalafmtCheckAll; scalafmtSbtCheck; scalafixEnable; scalafixAll --check; compile; test;"
+
+master-build:
+  image: sbtscala/scala-sbt:eclipse-temurin-alpine-21.0.8_9_1.12.4_2.13.18
+  stage: build-and-test
+  interruptible: true
+  allow_failure: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE != "api"
+      when: always
+    - when: never
+  script:
+    - sbt "scalafmtCheckAll; scalafmtSbtCheck; scalafixEnable; scalafixAll --check;"
+
+save:
+  image: alpine/curl:latest
+  stage: grade
+  interruptible: true
+  resource_group: grade
+  variables:
+    # if you want to try hack it, please use glptt-c4a6a58dc9cbf1c48715b6c0a9f38704205c8feb (it has same rights; but in this way you don't affect other students)
+    TOKEN_TRIGGER: glptt-e311ec61c70b74483fb70463130a86e5f84cef99
+  needs:
+    - job: mr-build
+      optional: false
+      artifacts: false
+  script:
+    - >
+      curl -s -X POST \
+        --form "variables[STUDENT_GITLAB_USER_ID]=${GITLAB_USER_ID}" \
+        --form "variables[STUDENT_CI_PROJECT_URL]=${CI_PROJECT_URL}" \
+        --form "variables[STUDENT_CI_PROJECT_NAME]=${CI_PROJECT_NAME}" \
+        --form "variables[STUDENT_CI_PROJECT_NAMESPACE]=${CI_PROJECT_NAMESPACE}" \
+        --form "variables[STUDENT_CI_PIPELINE_ID]=${CI_PIPELINE_ID}" \
+        --form "variables[STUDENT_CI_PROJECT_ID]=${CI_PROJECT_ID}" \
+        --form "variables[STUDENT_CI_MERGE_REQUEST_IID]=${CI_MERGE_REQUEST_IID}" \
+        "https://gitlab.education.tbank.ru/api/v4/projects/26514/trigger/pipeline?token=${TOKEN_TRIGGER}&ref=master" > /dev/null
+    - echo "Please wait for results, if in 15 minutes you don't see job 'result-ok' in 'master', please retry 'save' job in MR pipeline"
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+    - when: never
+
+result-ok:
+  stage: trigger
+  interruptible: true
+  allow_failure: true
+  retry: 2
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "api" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $SAVE_COMMENT && $SAVE_COMMENT == "OK"
+      when: always
+    - when: never
+  script:
+    - echo "Your hw is OK"
+
+result-fail:
+  stage: trigger
+  interruptible: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "api" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $SAVE_COMMENT && $SAVE_COMMENT != "OK"
+      when: always
+    - when: never
+  script:
+    - echo "You should fix your hw. Error - ${SAVE_COMMENT}"
+    - exit 1
+
+result-wait:
+  stage: trigger
+  interruptible: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "api" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $SAVE_COMMENT == null
+      when: always
+    - when: never
+  script:
+    - echo "Please wait for results, if in 15 minutes you don't see job 'result-ok' in 'master', please retry 'save' job in MR pipeline"
+    - exit 1

@@ -1,0 +1,19 @@
+[workspace]
+members = [
+    "examples/ripcalendar",
+    "task/add",
+    "task/comm",
+    "task/comm/xtask",
+    "task/ini",
+    "task/paperio/gui",
+    "task/paperio/proto",
+    "task/paperio/server",
+    "task/paperio/strategy",
+    "task/paperio/wasm-launcher",
+    "task/paperio/xtask",
+    "task/perc",
+    "task/polka",
+    "xtask/base",
+    "xtask/util",
+]
+resolver = "2"

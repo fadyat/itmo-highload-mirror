@@ -1,0 +1,12 @@
+**/*.code-workspace
+**/.vscode
+**/.idea
+**/target
+**/test_artefacts
+**/vendor
+**/*.log
+
+**/*.pyc
+
+# Updating Cargo.lock may conflict with student commits.
+Cargo.lock
